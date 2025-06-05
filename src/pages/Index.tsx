@@ -38,24 +38,24 @@ const Index = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const { toast } = useToast();
 
-  // Carica i prodotti al caricamento della pagina
+  // Load products on page load
   useEffect(() => {
     loadProducts();
   }, []);
 
   const loadProducts = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('products')
         .select('*');
       
       if (error) throw error;
       setProducts(data || []);
     } catch (error) {
-      console.error('Errore nel caricamento prodotti:', error);
+      console.error('Error loading products:', error);
       toast({
-        title: "Errore",
-        description: "Impossibile caricare i prodotti",
+        title: "Error",
+        description: "Unable to load products",
         variant: "destructive",
       });
     }
@@ -66,8 +66,8 @@ const Index = () => {
     
     if (!selectedProduct || !token || !quantity) {
       toast({
-        title: "Errore",
-        description: "Compila tutti i campi",
+        title: "Error",
+        description: "Please fill in all fields",
         variant: "destructive",
       });
       return;
@@ -76,8 +76,8 @@ const Index = () => {
     const selectedProductData = products.find(p => p.id === selectedProduct);
     if (!selectedProductData) {
       toast({
-        title: "Errore",
-        description: "Prodotto non trovato",
+        title: "Error",
+        description: "Product not found",
         variant: "destructive",
       });
       return;
@@ -98,8 +98,8 @@ const Index = () => {
 
       if (data.success) {
         toast({
-          title: "Successo",
-          description: data.message || "Richiesta elaborata con successo",
+          title: "Success",
+          description: data.message || "Request processed successfully",
         });
         
         // Reset form
@@ -108,16 +108,16 @@ const Index = () => {
         setQuantity("");
       } else {
         toast({
-          title: "Errore",
-          description: data.message || "Errore nell'elaborazione della richiesta",
+          title: "Error",
+          description: data.message || "Error processing request",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Errore:', error);
+      console.error('Error:', error);
       toast({
-        title: "Errore",
-        description: "Errore di comunicazione con il server",
+        title: "Error",
+        description: "Communication error with server",
         variant: "destructive",
       });
     } finally {
@@ -130,8 +130,8 @@ const Index = () => {
     
     if (!historyToken) {
       toast({
-        title: "Errore",
-        description: "Inserisci il token",
+        title: "Error",
+        description: "Please enter the token",
         variant: "destructive",
       });
       return;
@@ -153,14 +153,14 @@ const Index = () => {
       if (!data.transactions || data.transactions.length === 0) {
         toast({
           title: "Info",
-          description: "Nessuna transazione trovata per questo token",
+          description: "No transactions found for this token",
         });
       }
     } catch (error) {
-      console.error('Errore:', error);
+      console.error('Error:', error);
       toast({
-        title: "Errore",
-        description: "Errore nel recupero dello storico",
+        title: "Error",
+        description: "Error retrieving history",
         variant: "destructive",
       });
       setTransactions([]);
@@ -173,26 +173,25 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">API Shop</h1>
-          <p className="text-lg text-gray-600">Acquista e gestisci i tuoi prodotti digitali</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">API SERVICE</h1>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Form principale per la richiesta */}
+          {/* Main form for request */}
           <Card>
             <CardHeader>
-              <CardTitle>Effettua Richiesta</CardTitle>
+              <CardTitle>Make Request</CardTitle>
               <CardDescription>
-                Seleziona un prodotto, inserisci il tuo token e la quantità desiderata
+                Select a product, enter your token and desired quantity
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="product">Prodotto</Label>
+                  <Label htmlFor="product">Product</Label>
                   <Select value={selectedProduct} onValueChange={setSelectedProduct}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleziona un prodotto" />
+                      <SelectValue placeholder="Select a product" />
                     </SelectTrigger>
                     <SelectContent>
                       {products.map((product) => (
@@ -209,18 +208,18 @@ const Index = () => {
                   <Input
                     id="token"
                     type="text"
-                    placeholder="Inserisci il tuo token"
+                    placeholder="Enter your token"
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="quantity">Quantità</Label>
+                  <Label htmlFor="quantity">Quantity</Label>
                   <Input
                     id="quantity"
                     type="number"
-                    placeholder="Inserisci la quantità"
+                    placeholder="Enter the quantity"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     min="1"
@@ -228,18 +227,18 @@ const Index = () => {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Elaborazione..." : "Invia Richiesta"}
+                  {loading ? "Processing..." : "Submit Request"}
                 </Button>
               </form>
             </CardContent>
           </Card>
 
-          {/* Form per lo storico */}
+          {/* Form for history */}
           <Card>
             <CardHeader>
-              <CardTitle>Storico Transazioni</CardTitle>
+              <CardTitle>Transaction History</CardTitle>
               <CardDescription>
-                Visualizza lo storico delle tue transazioni inserendo il token
+                View your transaction history by entering your token
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -249,27 +248,27 @@ const Index = () => {
                   <Input
                     id="historyToken"
                     type="text"
-                    placeholder="Inserisci il tuo token"
+                    placeholder="Enter your token"
                     value={historyToken}
                     onChange={(e) => setHistoryToken(e.target.value)}
                   />
                 </div>
 
                 <Button type="submit" className="w-full" disabled={historyLoading}>
-                  {historyLoading ? "Caricamento..." : "Visualizza Storico"}
+                  {historyLoading ? "Loading..." : "View History"}
                 </Button>
               </form>
 
               {transactions.length > 0 && (
                 <div className="mt-6">
                   <Separator className="mb-4" />
-                  <h3 className="font-semibold mb-3">Transazioni Trovate:</h3>
+                  <h3 className="font-semibold mb-3">Transactions Found:</h3>
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {transactions.map((transaction) => (
                       <div key={transaction.id} className="p-3 bg-gray-50 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                           <span className="font-medium">
-                            {transaction.products?.name || 'Prodotto sconosciuto'}
+                            {transaction.products?.name || 'Unknown product'}
                           </span>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
                             transaction.status === 'success' 
@@ -280,8 +279,8 @@ const Index = () => {
                           </span>
                         </div>
                         <div className="text-sm text-gray-600">
-                          <p>Quantità: {transaction.qty}</p>
-                          <p>Data: {new Date(transaction.timestamp).toLocaleString('it-IT')}</p>
+                          <p>Quantity: {transaction.qty}</p>
+                          <p>Date: {new Date(transaction.timestamp).toLocaleString('en-US')}</p>
                         </div>
                       </div>
                     ))}
