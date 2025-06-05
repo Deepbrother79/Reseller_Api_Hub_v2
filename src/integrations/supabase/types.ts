@@ -9,7 +9,98 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      products: {
+        Row: {
+          fornitore_url: string
+          id: string
+          name: string
+          payload_template: Json
+        }
+        Insert: {
+          fornitore_url: string
+          id?: string
+          name: string
+          payload_template: Json
+        }
+        Update: {
+          fornitore_url?: string
+          id?: string
+          name?: string
+          payload_template?: Json
+        }
+        Relationships: []
+      }
+      tokens: {
+        Row: {
+          crediti: number
+          product_id: string
+          token: string
+        }
+        Insert: {
+          crediti?: number
+          product_id: string
+          token: string
+        }
+        Update: {
+          crediti?: number
+          product_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tokens_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          id: string
+          product_id: string
+          qty: number
+          response_data: Json | null
+          status: string
+          timestamp: string
+          token: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          qty: number
+          response_data?: Json | null
+          status: string
+          timestamp?: string
+          token: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          qty?: number
+          response_data?: Json | null
+          status?: string
+          timestamp?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_token_fkey"
+            columns: ["token"]
+            isOneToOne: false
+            referencedRelation: "tokens"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
