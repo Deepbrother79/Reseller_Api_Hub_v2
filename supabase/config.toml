@@ -1,1 +1,8 @@
+
 project_id = "vvtnzixsxfjzwhjetrfm"
+
+[functions.processa-richiesta]
+verify_jwt = false
+
+[functions.storico]
+verify_jwt = false
