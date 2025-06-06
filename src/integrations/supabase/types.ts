@@ -15,6 +15,7 @@ export type Database = {
           http_method: string
           id: string
           name: string
+          path_body: string | null
           payload_template: Json | null
         }
         Insert: {
@@ -22,6 +23,7 @@ export type Database = {
           http_method?: string
           id?: string
           name: string
+          path_body?: string | null
           payload_template?: Json | null
         }
         Update: {
@@ -29,6 +31,7 @@ export type Database = {
           http_method?: string
           id?: string
           name?: string
+          path_body?: string | null
           payload_template?: Json | null
         }
         Relationships: []

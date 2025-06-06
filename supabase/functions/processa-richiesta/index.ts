@@ -82,6 +82,7 @@ serve(async (req) => {
 
     // Make real API call to external provider
     let apiResponse;
+    let filteredResponse;
     let status = 'success';
     
     try {
@@ -124,7 +125,26 @@ serve(async (req) => {
       if (response.ok) {
         try {
           // Try to parse as JSON
-          apiResponse = JSON.parse(responseText);
+          const fullResponse = JSON.parse(responseText);
+          apiResponse = fullResponse;
+          
+          // Extract specific path if path_body is specified
+          if (product.path_body && product.path_body.trim()) {
+            const pathParts = product.path_body.split('.');
+            let extractedData = fullResponse;
+            
+            for (const part of pathParts) {
+              if (extractedData && typeof extractedData === 'object' && part in extractedData) {
+                extractedData = extractedData[part];
+              } else {
+                extractedData = fullResponse; // Fallback to full response if path not found
+                break;
+              }
+            }
+            filteredResponse = extractedData;
+          } else {
+            filteredResponse = fullResponse;
+          }
         } catch {
           // If not JSON, store as text
           apiResponse = {
@@ -132,6 +152,7 @@ serve(async (req) => {
             data: responseText,
             status: response.status
           };
+          filteredResponse = responseText;
         }
       } else {
         status = 'failed';
@@ -140,6 +161,7 @@ serve(async (req) => {
           error: `HTTP ${response.status}: ${responseText}`,
           status: response.status
         };
+        filteredResponse = apiResponse;
       }
       
     } catch (apiError) {
@@ -149,6 +171,7 @@ serve(async (req) => {
         success: false,
         error: apiError.message || 'Unknown error occurred'
       };
+      filteredResponse = apiResponse;
     }
 
     // Create transaction record
@@ -198,7 +221,8 @@ serve(async (req) => {
         message: status === 'success' 
           ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${tokenData.crediti - qty}`
           : "Request processed but external API failed",
-        api_response: apiResponse
+        api_response: filteredResponse, // Send the filtered response
+        full_response: apiResponse // Also include full response for debugging
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

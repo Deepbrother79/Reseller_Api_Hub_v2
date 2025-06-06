@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +37,7 @@ const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [apiResult, setApiResult] = useState<any>(null);
   const { toast } = useToast();
 
   // Base URL for API calls
@@ -134,6 +134,7 @@ const Index = () => {
     }
 
     setLoading(true);
+    setApiResult(null);
     
     try {
       const { data, error } = await supabase.functions.invoke('processa-richiesta', {
@@ -147,6 +148,7 @@ const Index = () => {
       if (error) throw error;
 
       if (data.success) {
+        setApiResult(data.api_response);
         toast({
           title: "Success",
           description: data.message || "Request processed successfully",
@@ -280,6 +282,22 @@ const Index = () => {
                   {loading ? "Processing..." : "Submit Request"}
                 </Button>
               </form>
+
+              {/* Show API result */}
+              {apiResult && (
+                <div className="mt-6">
+                  <Separator className="mb-4" />
+                  <h3 className="font-semibold mb-3">API Response:</h3>
+                  <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                    <pre className="text-sm text-green-800 whitespace-pre-wrap overflow-auto max-h-32">
+                      {typeof apiResult === 'string' 
+                        ? apiResult 
+                        : JSON.stringify(apiResult, null, 2)
+                      }
+                    </pre>
+                  </div>
+                </div>
+              )}
 
               {/* Show API URL for processing request */}
               {selectedProduct && token && quantity && (
