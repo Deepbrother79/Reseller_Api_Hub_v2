@@ -12,37 +12,43 @@ export type Database = {
       products: {
         Row: {
           fornitore_url: string
+          http_method: string
           id: string
           name: string
-          payload_template: Json
+          payload_template: Json | null
         }
         Insert: {
           fornitore_url: string
+          http_method?: string
           id?: string
           name: string
-          payload_template: Json
+          payload_template?: Json | null
         }
         Update: {
           fornitore_url?: string
+          http_method?: string
           id?: string
           name?: string
-          payload_template?: Json
+          payload_template?: Json | null
         }
         Relationships: []
       }
       tokens: {
         Row: {
           crediti: number
+          name: string
           product_id: string
           token: string
         }
         Insert: {
           crediti?: number
+          name?: string
           product_id: string
           token: string
         }
         Update: {
           crediti?: number
+          name?: string
           product_id?: string
           token?: string
         }

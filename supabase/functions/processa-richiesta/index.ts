@@ -85,15 +85,27 @@ serve(async (req) => {
     let status = 'success';
     
     try {
-      // Here you would make the actual API call to the provider
-      // For now, we'll simulate a successful response
-      console.log(`Making API call to ${product.fornitore_url} with payload:`, product.payload_template);
+      console.log(`Making ${product.http_method} API call to ${product.fornitore_url}`);
       
+      // Prepare request options based on HTTP method
+      const requestOptions: RequestInit = {
+        method: product.http_method,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      };
+
+      // Add body only for POST requests and if payload_template exists
+      if (product.http_method === 'POST' && product.payload_template) {
+        requestOptions.body = JSON.stringify(product.payload_template);
+      }
+
       // Simulate external API call
       apiResponse = {
         success: true,
-        data: `Successfully processed ${qty} units of ${product_name}`,
-        timestamp: new Date().toISOString()
+        data: `Successfully processed ${qty} units of ${product_name} using ${product.http_method} method`,
+        timestamp: new Date().toISOString(),
+        method: product.http_method
       };
       
     } catch (apiError) {

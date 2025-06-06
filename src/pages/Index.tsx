@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Copy } from "lucide-react";
 
 interface Product {
   id: string;
   name: string;
   fornitore_url: string;
   payload_template: any;
+  http_method: string;
 }
 
 interface Transaction {
@@ -38,6 +40,9 @@ const Index = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const { toast } = useToast();
 
+  // Base URL for API calls
+  const baseUrl = "https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1";
+
   // Load products on page load
   useEffect(() => {
     loadProducts();
@@ -59,6 +64,51 @@ const Index = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: "URL copied to clipboard",
+    });
+  };
+
+  const getSelectedProductData = () => {
+    return products.find(p => p.id === selectedProduct);
+  };
+
+  // Generate API URLs
+  const generateProcessRequestUrl = () => {
+    const productData = getSelectedProductData();
+    if (!productData || !token || !quantity) return "";
+    
+    const payload = {
+      product_name: productData.name,
+      token: token,
+      qty: parseInt(quantity)
+    };
+    
+    return `curl -X POST "${baseUrl}/processa-richiesta" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(payload)}'`;
+  };
+
+  const generateHistoryUrl = () => {
+    if (!historyToken) return "";
+    
+    const payload = {
+      token: historyToken
+    };
+    
+    return `curl -X POST "${baseUrl}/storico" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(payload)}'`;
+  };
+
+  const generateProductsUrl = () => {
+    return `curl -X GET "${baseUrl}/get-products" \\
+  -H "Content-Type: application/json"`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,12 +221,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">API SERVICE</h1>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-3 gap-8">
           {/* Main form for request */}
           <Card>
             <CardHeader>
@@ -230,6 +280,29 @@ const Index = () => {
                   {loading ? "Processing..." : "Submit Request"}
                 </Button>
               </form>
+
+              {/* Show API URL for processing request */}
+              {selectedProduct && token && quantity && (
+                <div className="mt-6">
+                  <Separator className="mb-4" />
+                  <h3 className="font-semibold mb-3">HTTP API Call:</h3>
+                  <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm font-medium">Process Request</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(generateProcessRequestUrl())}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <code className="text-xs bg-white p-2 rounded block whitespace-pre-wrap">
+                      {generateProcessRequestUrl()}
+                    </code>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -259,6 +332,29 @@ const Index = () => {
                 </Button>
               </form>
 
+              {/* Show API URL for history */}
+              {historyToken && (
+                <div className="mt-6">
+                  <Separator className="mb-4" />
+                  <h3 className="font-semibold mb-3">HTTP API Call:</h3>
+                  <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm font-medium">Get History</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(generateHistoryUrl())}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <code className="text-xs bg-white p-2 rounded block whitespace-pre-wrap">
+                      {generateHistoryUrl()}
+                    </code>
+                  </div>
+                </div>
+              )}
+
               {transactions.length > 0 && (
                 <div className="mt-6">
                   <Separator className="mb-4" />
@@ -287,6 +383,47 @@ const Index = () => {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* API URLs panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle>API Endpoints</CardTitle>
+              <CardDescription>
+                HTTP endpoints for external integrations
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-gray-100 p-3 rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-sm font-medium">Get Products</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(generateProductsUrl())}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <code className="text-xs bg-white p-2 rounded block whitespace-pre-wrap">
+                  {generateProductsUrl()}
+                </code>
+              </div>
+
+              <div className="text-sm text-gray-600 space-y-2">
+                <p><strong>Base URL:</strong></p>
+                <code className="bg-white p-2 rounded block text-xs break-all">
+                  {baseUrl}
+                </code>
+                
+                <p className="mt-4"><strong>Available Endpoints:</strong></p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li><code>/get-products</code> - GET - Retrieve all products</li>
+                  <li><code>/processa-richiesta</code> - POST - Process a request</li>
+                  <li><code>/storico</code> - POST - Get transaction history</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.storico]
 verify_jwt = false
+
+[functions.get-products]
+verify_jwt = false
