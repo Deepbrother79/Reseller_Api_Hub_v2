@@ -80,40 +80,74 @@ serve(async (req) => {
       );
     }
 
-    // Simulate API call to external provider
+    // Make real API call to external provider
     let apiResponse;
     let status = 'success';
     
     try {
       console.log(`Making ${product.http_method} API call to ${product.fornitore_url}`);
       
+      // Replace {{qty}} placeholder in the URL
+      const processedUrl = product.fornitore_url.replace(/\{\{qty\}\}/g, qty.toString());
+      console.log(`Processed URL: ${processedUrl}`);
+      
       // Prepare request options based on HTTP method
       const requestOptions: RequestInit = {
         method: product.http_method,
         headers: {
           'Content-Type': 'application/json',
+          'User-Agent': 'Supabase-Edge-Function/1.0'
         }
       };
 
       // Add body only for POST requests and if payload_template exists
       if (product.http_method === 'POST' && product.payload_template) {
-        requestOptions.body = JSON.stringify(product.payload_template);
+        // Replace {{qty}} in payload template if it exists
+        let processedPayload = product.payload_template;
+        if (typeof processedPayload === 'string') {
+          processedPayload = processedPayload.replace(/\{\{qty\}\}/g, qty.toString());
+        } else if (typeof processedPayload === 'object') {
+          processedPayload = JSON.parse(
+            JSON.stringify(processedPayload).replace(/\{\{qty\}\}/g, qty.toString())
+          );
+        }
+        requestOptions.body = JSON.stringify(processedPayload);
       }
 
-      // Simulate external API call
-      apiResponse = {
-        success: true,
-        data: `Successfully processed ${qty} units of ${product_name} using ${product.http_method} method`,
-        timestamp: new Date().toISOString(),
-        method: product.http_method
-      };
+      // Make the actual HTTP request
+      const response = await fetch(processedUrl, requestOptions);
+      const responseText = await response.text();
+      
+      console.log(`External API response status: ${response.status}`);
+      console.log(`External API response: ${responseText}`);
+      
+      if (response.ok) {
+        try {
+          // Try to parse as JSON
+          apiResponse = JSON.parse(responseText);
+        } catch {
+          // If not JSON, store as text
+          apiResponse = {
+            success: true,
+            data: responseText,
+            status: response.status
+          };
+        }
+      } else {
+        status = 'failed';
+        apiResponse = {
+          success: false,
+          error: `HTTP ${response.status}: ${responseText}`,
+          status: response.status
+        };
+      }
       
     } catch (apiError) {
       console.error('External API error:', apiError);
       status = 'failed';
       apiResponse = {
         success: false,
-        error: apiError.message
+        error: apiError.message || 'Unknown error occurred'
       };
     }
 
@@ -160,10 +194,11 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
+        success: status === 'success', 
         message: status === 'success' 
           ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${tokenData.crediti - qty}`
-          : "Request processed but external API failed"
+          : "Request processed but external API failed",
+        api_response: apiResponse
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
