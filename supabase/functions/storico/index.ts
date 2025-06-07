@@ -33,15 +33,10 @@ serve(async (req) => {
       );
     }
 
-    // Get transactions for the token
+    // Get transactions for the token - ora con product_name incluso
     const { data: transactions, error: transactionError } = await supabase
       .from('transactions')
-      .select(`
-        *,
-        products (
-          name
-        )
-      `)
+      .select('*')
       .eq('token', token)
       .order('timestamp', { ascending: false });
 

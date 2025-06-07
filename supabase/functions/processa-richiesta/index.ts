@@ -174,15 +174,17 @@ serve(async (req) => {
       filteredResponse = apiResponse;
     }
 
-    // Create transaction record
+    // Create transaction record with product_name
     const { error: transactionError } = await supabase
       .from('transactions')
       .insert({
         token: token,
         product_id: product.id,
+        product_name: product.name, // Aggiungo il nome del prodotto
         qty: qty,
         status: status,
-        response_data: apiResponse
+        response_data: apiResponse,
+        output_result: Array.isArray(filteredResponse) ? filteredResponse : [filteredResponse]
       });
 
     if (transactionError) {

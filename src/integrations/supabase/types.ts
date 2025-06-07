@@ -68,7 +68,9 @@ export type Database = {
       transactions: {
         Row: {
           id: string
+          output_result: Json | null
           product_id: string
+          product_name: string | null
           qty: number
           response_data: Json | null
           status: string
@@ -77,7 +79,9 @@ export type Database = {
         }
         Insert: {
           id?: string
+          output_result?: Json | null
           product_id: string
+          product_name?: string | null
           qty: number
           response_data?: Json | null
           status: string
@@ -86,7 +90,9 @@ export type Database = {
         }
         Update: {
           id?: string
+          output_result?: Json | null
           product_id?: string
+          product_name?: string | null
           qty?: number
           response_data?: Json | null
           status?: string

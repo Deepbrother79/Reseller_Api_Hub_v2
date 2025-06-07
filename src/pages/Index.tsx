@@ -393,10 +393,10 @@ const Index = () => {
                   <h3 className="font-semibold mb-3">Transactions Found:</h3>
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {transactions.map((transaction, index) => (
-                      <div key={transaction.transaction_id || transaction.id || index} className="p-3 bg-gray-50 rounded-lg">
+                      <div key={transaction.id || index} className="p-3 bg-gray-50 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                           <span className="font-medium">
-                            {transaction.product_name || transaction.products?.name || 'Unknown Product'}
+                            {transaction.product_name || 'Unknown Product'}
                           </span>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
                             transaction.status === 'success' 
@@ -407,19 +407,10 @@ const Index = () => {
                           </span>
                         </div>
                         <div className="text-sm text-gray-600">
-                          <p>Quantity: {transaction.quantity || transaction.qty || 0}</p>
+                          <p>Quantity: {transaction.qty || 0}</p>
                           <p>Date: {new Date(transaction.timestamp).toLocaleString('en-US')}</p>
                           
                           {/* Mostra i risultati se disponibili */}
-                          {transaction.formatted_results && (
-                            <div className="mt-2">
-                              <p className="font-medium">Results:</p>
-                              <div className="bg-white p-2 rounded text-xs font-mono">
-                                {transaction.formatted_results}
-                              </div>
-                            </div>
-                          )}
-                          
                           {transaction.output_result && transaction.output_result.length > 0 && (
                             <div className="mt-2">
                               <p className="font-medium">Output:</p>
