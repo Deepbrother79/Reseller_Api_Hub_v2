@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Copy, ChevronDown } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Copy } from "lucide-react";
 
 interface Product {
   id: string;
@@ -41,12 +43,7 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [apiResult, setApiResult] = useState<any>(null);
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
-
-  // Toast function (simplified)
-  const toast = (message: { title: string; description: string; variant?: string }) => {
-    alert(`${message.title}: ${message.description}`);
-  };
+  const { toast } = useToast();
 
   // Base URL sicuro - usa le Edge Functions come proxy
   const baseUrl = "https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1";
@@ -88,13 +85,6 @@ const Index = () => {
     return products.find(p => p.id === selectedProduct);
   };
 
-  // Custom Select Handler
-  const handleProductSelect = (productId: string) => {
-    console.log('Selecting product:', productId);
-    setSelectedProduct(productId);
-    setIsSelectOpen(false);
-  };
-
   // Generate simplified API URLs using secure endpoints
   const generateProcessRequestUrl = () => {
     const productData = getSelectedProductData();
@@ -113,7 +103,9 @@ const Index = () => {
     return `${baseUrl}/api-products`;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!selectedProduct || !token || !quantity) {
       toast({
         title: "Error",
@@ -181,7 +173,9 @@ const Index = () => {
     }
   };
 
-  const handleHistorySubmit = async () => {
+  const handleHistorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!historyToken) {
       toast({
         title: "Error",
@@ -234,18 +228,12 @@ const Index = () => {
     }
   };
 
-  // Get selected product name for display
-  const getSelectedProductName = () => {
-    const product = products.find(p => p.id === selectedProduct);
-    return product ? product.name : "Select a product";
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">API SERVICE</h1>
-          <p className="text-sm text-green-600 font-medium">🔒 Secure API</p>
+          <p className="text-sm text-green-600 font-medium">🔒 Secure API - Credenziali protette</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -258,49 +246,21 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="product">Product</Label>
-                  
-                  {/* Soluzione: Select Personalizzato con gestione click fuori */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      className="w-full p-3 text-left bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex justify-between items-center"
-                      onClick={() => setIsSelectOpen(!isSelectOpen)}
-                    >
-                      <span className={selectedProduct ? "text-gray-900" : "text-gray-500"}>
-                        {getSelectedProductName()}
-                      </span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${isSelectOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {isSelectOpen && (
-                      <>
-                        {/* Overlay per chiudere quando si clicca fuori */}
-                        <div 
-                          className="fixed inset-0 z-10" 
-                          onClick={() => setIsSelectOpen(false)}
-                        />
-                        <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-md shadow-lg z-20 max-h-60 overflow-y-auto">
-                          {products.length === 0 ? (
-                            <div className="p-3 text-gray-500">Loading products...</div>
-                          ) : (
-                            products.map((product) => (
-                              <button
-                                key={product.id}
-                                type="button"
-                                className="w-full p-3 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                                onClick={() => handleProductSelect(product.id)}
-                              >
-                                {product.name}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -326,18 +286,10 @@ const Index = () => {
                   />
                 </div>
 
-                <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Processing..." : "Submit Request"}
                 </Button>
-              </div>
-
-              {/* Debug info */}
-              {selectedProduct && (
-                <div className="mt-4 p-2 bg-blue-50 rounded text-sm">
-                  <strong>Selected Product ID:</strong> {selectedProduct}<br/>
-                  <strong>Selected Product Name:</strong> {getSelectedProductName()}
-                </div>
-              )}
+              </form>
 
               {/* Show API result */}
               {apiResult && (
@@ -389,7 +341,7 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <form onSubmit={handleHistorySubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="historyToken">Token</Label>
                   <Input
@@ -401,10 +353,10 @@ const Index = () => {
                   />
                 </div>
 
-                <Button onClick={handleHistorySubmit} className="w-full" disabled={historyLoading}>
+                <Button type="submit" className="w-full" disabled={historyLoading}>
                   {historyLoading ? "Loading..." : "View History"}
                 </Button>
-              </div>
+              </form>
 
               {/* Show API URL for history */}
               {historyToken && (
@@ -475,6 +427,9 @@ const Index = () => {
           <Card>
             <CardHeader>
               <CardTitle>🔒 Secure API Endpoints</CardTitle>
+              <CardDescription>
+                Protected HTTP endpoints - No exposed credentials
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-gray-100 p-3 rounded-lg">
@@ -494,6 +449,14 @@ const Index = () => {
               </div>
 
               <div className="text-sm text-gray-600 space-y-2">
+                <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+                  <p className="font-medium text-green-800 mb-1">🔒 Sicurezza Attivata</p>
+                  <p className="text-xs text-green-700">
+                    • Credenziali Supabase nascoste<br/>
+                    • API protette tramite proxy<br/>
+                    • Row Level Security abilitato
+                  </p>
+                </div>
                 
                 <p><strong>Base URL:</strong></p>
                 <code className="bg-white p-2 rounded block text-xs break-all">
@@ -533,5 +496,3 @@ const Index = () => {
     </div>
   );
 };
-
-export default Index;
