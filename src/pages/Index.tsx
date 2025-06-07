@@ -47,8 +47,8 @@ const Index = () => {
   const [apiResult, setApiResult] = useState<any>(null);
   const { toast } = useToast();
 
-  // Base URL for API calls
-  const baseUrl = "https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1";
+  // Base URL for API calls - ora usa il dominio Vercel
+  const baseUrl = "https://token-transaction-hub.vercel.app/api";
 
   // Load products on page load
   useEffect(() => {
@@ -85,37 +85,22 @@ const Index = () => {
     return products.find(p => p.id === selectedProduct);
   };
 
-  // Generate API URLs
+  // Generate simplified API URLs
   const generateProcessRequestUrl = () => {
     const productData = getSelectedProductData();
     if (!productData || !token || !quantity) return "";
     
-    const payload = {
-      product_name: productData.name,
-      token: token,
-      qty: parseInt(quantity)
-    };
-    
-    return `curl -X POST "${baseUrl}/processa-richiesta" \\
-  -H "Content-Type: application/json" \\
-  -d '${JSON.stringify(payload)}'`;
+    return `${baseUrl}/process?product=${encodeURIComponent(productData.name)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
   };
 
   const generateHistoryUrl = () => {
     if (!historyToken) return "";
     
-    const payload = {
-      token: historyToken
-    };
-    
-    return `curl -X POST "${baseUrl}/storico" \\
-  -H "Content-Type: application/json" \\
-  -d '${JSON.stringify(payload)}'`;
+    return `${baseUrl}/history?token=${encodeURIComponent(historyToken)}`;
   };
 
   const generateProductsUrl = () => {
-    return `curl -X GET "${baseUrl}/get-products" \\
-  -H "Content-Type: application/json"`;
+    return `${baseUrl}/products`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -317,10 +302,10 @@ const Index = () => {
               {selectedProduct && token && quantity && (
                 <div className="mt-6">
                   <Separator className="mb-4" />
-                  <h3 className="font-semibold mb-3">HTTP API Call:</h3>
+                  <h3 className="font-semibold mb-3">API Endpoint:</h3>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-medium">Process Request</span>
+                      <span className="text-sm font-medium text-green-600">POST Request</span>
                       <Button
                         size="sm"
                         variant="outline"
@@ -329,7 +314,7 @@ const Index = () => {
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
-                    <code className="text-xs bg-white p-2 rounded block whitespace-pre-wrap">
+                    <code className="text-xs bg-white p-2 rounded block break-all">
                       {generateProcessRequestUrl()}
                     </code>
                   </div>
@@ -368,10 +353,10 @@ const Index = () => {
               {historyToken && (
                 <div className="mt-6">
                   <Separator className="mb-4" />
-                  <h3 className="font-semibold mb-3">HTTP API Call:</h3>
+                  <h3 className="font-semibold mb-3">API Endpoint:</h3>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-medium">Get History</span>
+                      <span className="text-sm font-medium text-blue-600">GET Request</span>
                       <Button
                         size="sm"
                         variant="outline"
@@ -380,7 +365,7 @@ const Index = () => {
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
-                    <code className="text-xs bg-white p-2 rounded block whitespace-pre-wrap">
+                    <code className="text-xs bg-white p-2 rounded block break-all">
                       {generateHistoryUrl()}
                     </code>
                   </div>
@@ -441,7 +426,7 @@ const Index = () => {
             <CardContent className="space-y-4">
               <div className="bg-gray-100 p-3 rounded-lg">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-sm font-medium">Get Products</span>
+                  <span className="text-sm font-medium text-purple-600">GET - Get Products</span>
                   <Button
                     size="sm"
                     variant="outline"
@@ -450,7 +435,7 @@ const Index = () => {
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
-                <code className="text-xs bg-white p-2 rounded block whitespace-pre-wrap">
+                <code className="text-xs bg-white p-2 rounded block break-all">
                   {generateProductsUrl()}
                 </code>
               </div>
@@ -462,11 +447,30 @@ const Index = () => {
                 </code>
                 
                 <p className="mt-4"><strong>Available Endpoints:</strong></p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li><code>/get-products</code> - GET - Retrieve all products</li>
-                  <li><code>/processa-richiesta</code> - POST - Process a request</li>
-                  <li><code>/storico</code> - POST - Get transaction history</li>
-                </ul>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">GET</span>
+                    <code className="text-xs">/products</code>
+                    <span className="text-xs text-gray-500">- Retrieve all products</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">POST</span>
+                    <code className="text-xs">/process</code>
+                    <span className="text-xs text-gray-500">- Process a request</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">GET</span>
+                    <code className="text-xs">/history</code>
+                    <span className="text-xs text-gray-500">- Get transaction history</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-xs text-gray-500">
+                  <p><strong>Example URLs:</strong></p>
+                  <p>• Process: <code>/api/process?product=Google&token=abc123&qty=5</code></p>
+                  <p>• History: <code>/api/history?token=abc123</code></p>
+                  <p>• Products: <code>/api/products</code></p>
+                </div>
               </div>
             </CardContent>
           </Card>
