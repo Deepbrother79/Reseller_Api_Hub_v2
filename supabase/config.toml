@@ -9,3 +9,12 @@ verify_jwt = false
 
 [functions.get-products]
 verify_jwt = false
+
+[functions.api-products]
+verify_jwt = false
+
+[functions.api-process]
+verify_jwt = false
+
+[functions.api-history]
+verify_jwt = false

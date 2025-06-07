@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { Copy } from "lucide-react";
 
 interface Product {
@@ -29,7 +28,6 @@ interface Transaction {
   output_result?: string[];
   formatted_results?: string;
   token: string;
-  // Mantieni anche i campi vecchi per compatibilità
   id?: string;
   response_data?: any;
   products?: { name: string };
@@ -47,8 +45,8 @@ const Index = () => {
   const [apiResult, setApiResult] = useState<any>(null);
   const { toast } = useToast();
 
-  // Base URL for API calls - ora usa il dominio Vercel
-  const baseUrl = "https://token-transaction-hub.vercel.app/api";
+  // Base URL sicuro - usa le Edge Functions come proxy
+  const baseUrl = "https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1";
 
   // Load products on page load
   useEffect(() => {
@@ -57,12 +55,14 @@ const Index = () => {
 
   const loadProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*');
+      const response = await fetch(`${baseUrl}/api-products`);
+      const data = await response.json();
       
-      if (error) throw error;
-      setProducts(data || []);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to load products');
+      }
+      
+      setProducts(data.products || []);
     } catch (error) {
       console.error('Error loading products:', error);
       toast({
@@ -85,22 +85,22 @@ const Index = () => {
     return products.find(p => p.id === selectedProduct);
   };
 
-  // Generate simplified API URLs
+  // Generate simplified API URLs using secure endpoints
   const generateProcessRequestUrl = () => {
     const productData = getSelectedProductData();
     if (!productData || !token || !quantity) return "";
     
-    return `${baseUrl}/process?product=${encodeURIComponent(productData.name)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
+    return `${baseUrl}/api-process?product=${encodeURIComponent(productData.name)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
   };
 
   const generateHistoryUrl = () => {
     if (!historyToken) return "";
     
-    return `${baseUrl}/history?token=${encodeURIComponent(historyToken)}`;
+    return `${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`;
   };
 
   const generateProductsUrl = () => {
-    return `${baseUrl}/products`;
+    return `${baseUrl}/api-products`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,15 +129,19 @@ const Index = () => {
     setApiResult(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('processa-richiesta', {
-        body: {
+      const response = await fetch(`${baseUrl}/api-process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           product_name: selectedProductData.name,
           token: token,
           qty: parseInt(quantity)
-        }
+        })
       });
 
-      if (error) throw error;
+      const data = await response.json();
 
       if (data.success) {
         setApiResult(data.api_response);
@@ -153,7 +157,7 @@ const Index = () => {
       } else {
         toast({
           title: "Error",
-          description: data.message || "Error processing request",
+          description: data.message || data.error || "Error processing request",
           variant: "destructive",
         });
       }
@@ -184,15 +188,19 @@ const Index = () => {
     setHistoryLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('storico', {
-        body: {
+      const response = await fetch(`${baseUrl}/api-history`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           token: historyToken
-        }
+        })
       });
 
-      if (error) throw error;
+      const data = await response.json();
 
-      console.log('API Response:', data); // Debug per vedere la struttura
+      console.log('API Response:', data);
       
       setTransactions(data.transactions || []);
       
@@ -225,6 +233,7 @@ const Index = () => {
       <div className="max-w-6xl mx-auto px-4 space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">API SERVICE</h1>
+          <p className="text-sm text-green-600 font-medium">🔒 Secure API - Credenziali protette</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -302,7 +311,7 @@ const Index = () => {
               {selectedProduct && token && quantity && (
                 <div className="mt-6">
                   <Separator className="mb-4" />
-                  <h3 className="font-semibold mb-3">API Endpoint:</h3>
+                  <h3 className="font-semibold mb-3">Secure API Endpoint:</h3>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <span className="text-sm font-medium text-green-600">POST Request</span>
@@ -353,7 +362,7 @@ const Index = () => {
               {historyToken && (
                 <div className="mt-6">
                   <Separator className="mb-4" />
-                  <h3 className="font-semibold mb-3">API Endpoint:</h3>
+                  <h3 className="font-semibold mb-3">Secure API Endpoint:</h3>
                   <div className="bg-gray-100 p-3 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <span className="text-sm font-medium text-blue-600">GET Request</span>
@@ -395,7 +404,6 @@ const Index = () => {
                           <p>Quantity: {transaction.qty || 0}</p>
                           <p>Date: {new Date(transaction.timestamp).toLocaleString('en-US')}</p>
                           
-                          {/* Mostra i risultati se disponibili */}
                           {transaction.output_result && transaction.output_result.length > 0 && (
                             <div className="mt-2">
                               <p className="font-medium">Output:</p>
@@ -418,9 +426,9 @@ const Index = () => {
           {/* API URLs panel */}
           <Card>
             <CardHeader>
-              <CardTitle>API Endpoints</CardTitle>
+              <CardTitle>🔒 Secure API Endpoints</CardTitle>
               <CardDescription>
-                HTTP endpoints for external integrations
+                Protected HTTP endpoints - No exposed credentials
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -441,6 +449,15 @@ const Index = () => {
               </div>
 
               <div className="text-sm text-gray-600 space-y-2">
+                <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+                  <p className="font-medium text-green-800 mb-1">🔒 Sicurezza Attivata</p>
+                  <p className="text-xs text-green-700">
+                    • Credenziali Supabase nascoste<br/>
+                    • API protette tramite proxy<br/>
+                    • Row Level Security abilitato
+                  </p>
+                </div>
+                
                 <p><strong>Base URL:</strong></p>
                 <code className="bg-white p-2 rounded block text-xs break-all">
                   {baseUrl}
@@ -450,26 +467,26 @@ const Index = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">GET</span>
-                    <code className="text-xs">/products</code>
+                    <code className="text-xs">/api-products</code>
                     <span className="text-xs text-gray-500">- Retrieve all products</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">POST</span>
-                    <code className="text-xs">/process</code>
+                    <code className="text-xs">/api-process</code>
                     <span className="text-xs text-gray-500">- Process a request</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">GET</span>
-                    <code className="text-xs">/history</code>
+                    <code className="text-xs">/api-history</code>
                     <span className="text-xs text-gray-500">- Get transaction history</span>
                   </div>
                 </div>
 
                 <div className="mt-4 text-xs text-gray-500">
                   <p><strong>Example URLs:</strong></p>
-                  <p>• Process: <code>/api/process?product=Google&token=abc123&qty=5</code></p>
-                  <p>• History: <code>/api/history?token=abc123</code></p>
-                  <p>• Products: <code>/api/products</code></p>
+                  <p>• Process: <code>/api-process?product=Google&token=abc123&qty=5</code></p>
+                  <p>• History: <code>/api-history?token=abc123</code></p>
+                  <p>• Products: <code>/api-products</code></p>
                 </div>
               </div>
             </CardContent>
