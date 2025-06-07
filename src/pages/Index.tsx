@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { Copy } from "lucide-react";
+import { Copy, ChevronDown } from "lucide-react";
 
 interface Product {
   id: string;
@@ -43,7 +41,12 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [apiResult, setApiResult] = useState<any>(null);
-  const { toast } = useToast();
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+
+  // Toast function (simplified)
+  const toast = (message: { title: string; description: string; variant?: string }) => {
+    alert(`${message.title}: ${message.description}`);
+  };
 
   // Base URL sicuro - usa le Edge Functions come proxy
   const baseUrl = "https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1";
@@ -85,6 +88,13 @@ const Index = () => {
     return products.find(p => p.id === selectedProduct);
   };
 
+  // Custom Select Handler
+  const handleProductSelect = (productId: string) => {
+    console.log('Selecting product:', productId);
+    setSelectedProduct(productId);
+    setIsSelectOpen(false);
+  };
+
   // Generate simplified API URLs using secure endpoints
   const generateProcessRequestUrl = () => {
     const productData = getSelectedProductData();
@@ -103,9 +113,7 @@ const Index = () => {
     return `${baseUrl}/api-products`;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!selectedProduct || !token || !quantity) {
       toast({
         title: "Error",
@@ -173,9 +181,7 @@ const Index = () => {
     }
   };
 
-  const handleHistorySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleHistorySubmit = async () => {
     if (!historyToken) {
       toast({
         title: "Error",
@@ -228,6 +234,12 @@ const Index = () => {
     }
   };
 
+  // Get selected product name for display
+  const getSelectedProductName = () => {
+    const product = products.find(p => p.id === selectedProduct);
+    return product ? product.name : "Select a product";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 space-y-8">
@@ -246,21 +258,49 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="product">Product</Label>
-                  <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  
+                  {/* Soluzione: Select Personalizzato con gestione click fuori */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="w-full p-3 text-left bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex justify-between items-center"
+                      onClick={() => setIsSelectOpen(!isSelectOpen)}
+                    >
+                      <span className={selectedProduct ? "text-gray-900" : "text-gray-500"}>
+                        {getSelectedProductName()}
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isSelectOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isSelectOpen && (
+                      <>
+                        {/* Overlay per chiudere quando si clicca fuori */}
+                        <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={() => setIsSelectOpen(false)}
+                        />
+                        <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-md shadow-lg z-20 max-h-60 overflow-y-auto">
+                          {products.length === 0 ? (
+                            <div className="p-3 text-gray-500">Loading products...</div>
+                          ) : (
+                            products.map((product) => (
+                              <button
+                                key={product.id}
+                                type="button"
+                                className="w-full p-3 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                                onClick={() => handleProductSelect(product.id)}
+                              >
+                                {product.name}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -286,10 +326,18 @@ const Index = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button onClick={handleSubmit} className="w-full" disabled={loading}>
                   {loading ? "Processing..." : "Submit Request"}
                 </Button>
-              </form>
+              </div>
+
+              {/* Debug info */}
+              {selectedProduct && (
+                <div className="mt-4 p-2 bg-blue-50 rounded text-sm">
+                  <strong>Selected Product ID:</strong> {selectedProduct}<br/>
+                  <strong>Selected Product Name:</strong> {getSelectedProductName()}
+                </div>
+              )}
 
               {/* Show API result */}
               {apiResult && (
@@ -341,7 +389,7 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleHistorySubmit} className="space-y-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="historyToken">Token</Label>
                   <Input
@@ -353,10 +401,10 @@ const Index = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={historyLoading}>
+                <Button onClick={handleHistorySubmit} className="w-full" disabled={historyLoading}>
                   {historyLoading ? "Loading..." : "View History"}
                 </Button>
-              </form>
+              </div>
 
               {/* Show API URL for history */}
               {historyToken && (
