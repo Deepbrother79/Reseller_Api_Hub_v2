@@ -233,7 +233,7 @@ const Index = () => {
       <div className="max-w-6xl mx-auto px-4 space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">API SERVICE</h1>
-          <p className="text-sm text-green-600 font-medium">🔒 Secure API - Credenziali protette</p>
+          <p className="text-sm text-green-600 font-medium">🔒 Secure API</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -427,9 +427,6 @@ const Index = () => {
           <Card>
             <CardHeader>
               <CardTitle>🔒 Secure API Endpoints</CardTitle>
-              <CardDescription>
-                Protected HTTP endpoints - No exposed credentials
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-gray-100 p-3 rounded-lg">
