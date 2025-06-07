@@ -57,11 +57,19 @@ const Index = () => {
 
   const loadProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*');
-      
-      if (error) throw error;
+      // Usa la nuova API invece di Supabase direttamente
+      const response = await fetch(`${baseUrl}/products`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
       setProducts(data || []);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -129,15 +137,24 @@ const Index = () => {
     setApiResult(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('processa-richiesta', {
-        body: {
-          product_name: selectedProductData.name,
+      // Usa la nuova API invece di Supabase direttamente
+      const response = await fetch(`${baseUrl}/process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product: selectedProductData.name,
           token: token,
           qty: parseInt(quantity)
-        }
+        })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
 
       if (data.success) {
         setApiResult(data.api_response);
@@ -184,13 +201,19 @@ const Index = () => {
     setHistoryLoading(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('storico', {
-        body: {
-          token: historyToken
+      // Usa la nuova API invece di Supabase direttamente
+      const response = await fetch(`${baseUrl}/history?token=${encodeURIComponent(historyToken)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
 
       console.log('API Response:', data); // Debug per vedere la struttura
       
