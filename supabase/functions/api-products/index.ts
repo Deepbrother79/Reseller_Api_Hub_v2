@@ -27,7 +27,7 @@ serve(async (req) => {
 
     const { data: products, error } = await supabase
       .from('products')
-      .select('*');
+      .select('id, name, fornitore_url, payload_template, http_method');
 
     if (error) {
       throw error;
