@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -41,18 +35,20 @@ interface Transaction {
 
 const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<string>('');
-  const [token, setToken] = useState<string>('');
-  const [quantity, setQuantity] = useState<string>('');
-  const [historyToken, setHistoryToken] = useState<string>('');
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
+  const [token, setToken] = useState<string>("");
+  const [quantity, setQuantity] = useState<string>("");
+  const [historyToken, setHistoryToken] = useState<string>("");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [apiResult, setApiResult] = useState<any>(null);
   const { toast } = useToast();
 
+  // Base URL sicuro - usa le Edge Functions come proxy
   const baseUrl = "https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1";
 
+  // Load products on page load
   useEffect(() => {
     loadProducts();
   }, []);
@@ -61,11 +57,11 @@ const Index = () => {
     try {
       const response = await fetch(`${baseUrl}/api-products`);
       const data = await response.json();
-
+      
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to load products');
       }
-
+      
       setProducts(data.products || []);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -89,16 +85,27 @@ const Index = () => {
     return products.find(p => p.id === selectedProduct);
   };
 
+  // Generate simplified API URLs using secure endpoints
   const generateProcessRequestUrl = () => {
     const productData = getSelectedProductData();
     if (!productData || !token || !quantity) return "";
-
+    
     return `${baseUrl}/api-process?product=${encodeURIComponent(productData.name)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
+  };
+
+  const generateHistoryUrl = () => {
+    if (!historyToken) return "";
+    
+    return `${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`;
+  };
+
+  const generateProductsUrl = () => {
+    return `${baseUrl}/api-products`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!selectedProduct || !token || !quantity) {
       toast({
         title: "Error",
@@ -108,7 +115,7 @@ const Index = () => {
       return;
     }
 
-    const selectedProductData = getSelectedProductData();
+    const selectedProductData = products.find(p => p.id === selectedProduct);
     if (!selectedProductData) {
       toast({
         title: "Error",
@@ -120,15 +127,17 @@ const Index = () => {
 
     setLoading(true);
     setApiResult(null);
-
+    
     try {
       const response = await fetch(`${baseUrl}/api-process`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           product_name: selectedProductData.name,
           token: token,
-          qty: parseInt(quantity),
+          qty: parseInt(quantity)
         })
       });
 
@@ -140,10 +149,11 @@ const Index = () => {
           title: "Success",
           description: data.message || "Request processed successfully",
         });
-
-        setSelectedProduct('');
-        setToken('');
-        setQuantity('');
+        
+        // Reset form
+        setSelectedProduct("");
+        setToken("");
+        setQuantity("");
       } else {
         toast({
           title: "Error",
@@ -165,7 +175,7 @@ const Index = () => {
 
   const handleHistorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!historyToken) {
       toast({
         title: "Error",
@@ -176,18 +186,24 @@ const Index = () => {
     }
 
     setHistoryLoading(true);
-
+    
     try {
       const response = await fetch(`${baseUrl}/api-history`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: historyToken }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: historyToken
+        })
       });
 
       const data = await response.json();
 
+      console.log('API Response:', data);
+      
       setTransactions(data.transactions || []);
-
+      
       if (!data.transactions || data.transactions.length === 0) {
         toast({
           title: "Info",
@@ -221,6 +237,7 @@ const Index = () => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Main form for request */}
           <Card>
             <CardHeader>
               <CardTitle>Make Request</CardTitle>
@@ -232,7 +249,7 @@ const Index = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="product">Product</Label>
-                  <Select value={selectedProduct} onValueChange={(value) => setSelectedProduct(value)}>
+                  <Select value={selectedProduct} onValueChange={setSelectedProduct}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a product" />
                     </SelectTrigger>
@@ -250,9 +267,10 @@ const Index = () => {
                   <Label htmlFor="token">Token/Voucher</Label>
                   <Input
                     id="token"
+                    type="text"
+                    placeholder="Enter your token"
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
-                    placeholder="Enter your token"
                   />
                 </div>
 
@@ -261,10 +279,10 @@ const Index = () => {
                   <Input
                     id="quantity"
                     type="number"
+                    placeholder="Enter the quantity"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
-                    placeholder="Enter the quantity"
-                    min={1}
+                    min="1"
                   />
                 </div>
 
@@ -273,20 +291,23 @@ const Index = () => {
                 </Button>
               </form>
 
+              {/* Show API result */}
               {apiResult && (
                 <div className="mt-6">
                   <Separator className="mb-4" />
                   <h3 className="font-semibold mb-3">API Response:</h3>
                   <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
                     <pre className="text-sm text-green-800 whitespace-pre-wrap overflow-auto max-h-32">
-                      {typeof apiResult === 'string'
-                        ? apiResult
-                        : JSON.stringify(apiResult, null, 2)}
+                      {typeof apiResult === 'string' 
+                        ? apiResult 
+                        : JSON.stringify(apiResult, null, 2)
+                      }
                     </pre>
                   </div>
                 </div>
               )}
 
+              {/* Show API URL for processing request */}
               {selectedProduct && token && quantity && (
                 <div className="mt-6">
                   <Separator className="mb-4" />
@@ -311,7 +332,154 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* History section omitted for brevity */}
+          {/* Form for history */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Transaction History</CardTitle>
+              <CardDescription>
+                View your transaction history by entering your token
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleHistorySubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="historyToken">Token</Label>
+                  <Input
+                    id="historyToken"
+                    type="text"
+                    placeholder="Enter your token"
+                    value={historyToken}
+                    onChange={(e) => setHistoryToken(e.target.value)}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={historyLoading}>
+                  {historyLoading ? "Loading..." : "View History"}
+                </Button>
+              </form>
+
+              {/* Show API URL for history */}
+              {historyToken && (
+                <div className="mt-6">
+                  <Separator className="mb-4" />
+                  <h3 className="font-semibold mb-3">Secure API Endpoint:</h3>
+                  <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm font-medium text-blue-600">GET Request</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(generateHistoryUrl())}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <code className="text-xs bg-white p-2 rounded block break-all">
+                      {generateHistoryUrl()}
+                    </code>
+                  </div>
+                </div>
+              )}
+
+              {transactions.length > 0 && (
+                <div className="mt-6">
+                  <Separator className="mb-4" />
+                  <h3 className="font-semibold mb-3">Transactions Found:</h3>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {transactions.map((transaction, index) => (
+                      <div key={transaction.id || index} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-medium">
+                            {transaction.product_name || 'Unknown Product'}
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            transaction.status === 'success' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {transaction.status || 'Unknown'}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <p>Quantity: {transaction.qty || 0}</p>
+                          <p>Date: {new Date(transaction.timestamp).toLocaleString('en-US')}</p>
+                          
+                          {transaction.output_result && transaction.output_result.length > 0 && (
+                            <div className="mt-2">
+                              <p className="font-medium">Output:</p>
+                              <ul className="bg-white p-2 rounded text-xs font-mono">
+                                {transaction.output_result.map((result, idx) => (
+                                  <li key={idx}>{result}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* API URLs panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle>🔒 Secure API Endpoints</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-gray-100 p-3 rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-sm font-medium text-purple-600">GET - Get Products</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(generateProductsUrl())}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <code className="text-xs bg-white p-2 rounded block break-all">
+                  {generateProductsUrl()}
+                </code>
+              </div>
+
+              <div className="text-sm text-gray-600 space-y-2">
+                
+                <p><strong>Base URL:</strong></p>
+                <code className="bg-white p-2 rounded block text-xs break-all">
+                  {baseUrl}
+                </code>
+                
+                <p className="mt-4"><strong>Available Endpoints:</strong></p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">GET</span>
+                    <code className="text-xs">/api-products</code>
+                    <span className="text-xs text-gray-500">- Retrieve all products</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">POST</span>
+                    <code className="text-xs">/api-process</code>
+                    <span className="text-xs text-gray-500">- Process a request</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">GET</span>
+                    <code className="text-xs">/api-history</code>
+                    <span className="text-xs text-gray-500">- Get transaction history</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-xs text-gray-500">
+                  <p><strong>Example URLs:</strong></p>
+                  <p>• Process: <code>/api-process?product=Google&token=abc123&qty=5</code></p>
+                  <p>• History: <code>/api-history?token=abc123</code></p>
+                  <p>• Products: <code>/api-products</code></p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
