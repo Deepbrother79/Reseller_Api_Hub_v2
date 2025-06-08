@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,14 +56,18 @@ const Index = () => {
 
   const loadProducts = async () => {
     try {
+      console.log('Loading products from:', `${baseUrl}/api-products`);
       const response = await fetch(`${baseUrl}/api-products`);
       const data = await response.json();
+      
+      console.log('Products response:', data);
       
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to load products');
       }
       
       setProducts(data.products || []);
+      console.log('Products loaded successfully:', data.products?.length || 0);
     } catch (error) {
       console.error('Error loading products:', error);
       toast({
@@ -83,6 +88,11 @@ const Index = () => {
 
   const getSelectedProductData = () => {
     return products.find(p => p.id === selectedProduct);
+  };
+
+  const handleProductSelect = (value: string) => {
+    console.log('Product selected:', value);
+    setSelectedProduct(value);
   };
 
   // Generate simplified API URLs using secure endpoints
@@ -249,7 +259,7 @@ const Index = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="product">Product</Label>
-                  <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                  <Select value={selectedProduct} onValueChange={handleProductSelect}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a product" />
                     </SelectTrigger>
@@ -261,6 +271,9 @@ const Index = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {products.length === 0 && (
+                    <p className="text-sm text-gray-500">Loading products...</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
