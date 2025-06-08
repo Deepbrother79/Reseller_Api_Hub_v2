@@ -11,30 +11,83 @@ export type Database = {
     Tables: {
       products: {
         Row: {
+          condition_reply_output: string | null
           fornitore_url: string
+          header_http: Json | null
           http_method: string
           id: string
           name: string
           path_body: string | null
           payload_template: Json | null
+          quantity: number | null
+          regex_output: string | null
         }
         Insert: {
+          condition_reply_output?: string | null
           fornitore_url: string
+          header_http?: Json | null
           http_method?: string
           id?: string
           name: string
           path_body?: string | null
           payload_template?: Json | null
+          quantity?: number | null
+          regex_output?: string | null
         }
         Update: {
+          condition_reply_output?: string | null
           fornitore_url?: string
+          header_http?: Json | null
           http_method?: string
           id?: string
           name?: string
           path_body?: string | null
           payload_template?: Json | null
+          quantity?: number | null
+          regex_output?: string | null
         }
         Relationships: []
+      }
+      products_quantity: {
+        Row: {
+          fornitore_url: string | null
+          header_http: Json | null
+          http_method: string
+          id: string
+          path_body: string | null
+          payload_template: Json | null
+          quantity: number | null
+          regex_output: string | null
+        }
+        Insert: {
+          fornitore_url?: string | null
+          header_http?: Json | null
+          http_method?: string
+          id: string
+          path_body?: string | null
+          payload_template?: Json | null
+          quantity?: number | null
+          regex_output?: string | null
+        }
+        Update: {
+          fornitore_url?: string | null
+          header_http?: Json | null
+          http_method?: string
+          id?: string
+          path_body?: string | null
+          payload_template?: Json | null
+          quantity?: number | null
+          regex_output?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_quantity_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tokens: {
         Row: {
@@ -56,6 +109,13 @@ export type Database = {
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tokens_name_fkey"
+            columns: ["name"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["name"]
+          },
           {
             foreignKeyName: "tokens_product_id_fkey"
             columns: ["product_id"]
