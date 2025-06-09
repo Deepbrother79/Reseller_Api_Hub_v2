@@ -1,17 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import RequestForm from "@/components/RequestForm";
-import HistoryForm from "@/components/HistoryForm";
-import ApiEndpointsPanel from "@/components/ApiEndpointsPanel";
-import TransactionList from "@/components/TransactionList";
+import RequestForm from '@/components/RequestForm';
+import HistoryForm from '@/components/HistoryForm';
+import ApiEndpointsPanel from '@/components/ApiEndpointsPanel';
+import TransactionList from '@/components/TransactionList';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Product {
   id: string;
   name: string;
-  fornitore_url: string;
-  payload_template: any;
-  http_method: string;
+  quantity?: number;
+}
+
+interface FullProduct {
+  id: string;
+  name: string;
+  quantity: number | null;
 }
 
 interface Transaction {
@@ -33,47 +38,72 @@ interface Transaction {
 
 const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [token, setToken] = useState<string>("");
-  const [quantity, setQuantity] = useState<string>("");
-  const [historyToken, setHistoryToken] = useState<string>("");
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [fullProducts, setFullProducts] = useState<FullProduct[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [token, setToken] = useState('');
+  const [quantity, setQuantity] = useState('');
   const [loading, setLoading] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
   const [apiResult, setApiResult] = useState<any>(null);
+  
+  const [historyToken, setHistoryToken] = useState('');
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  
   const { toast } = useToast();
 
-  // Base URL sicuro - usa le Edge Functions come proxy
-  const baseUrl = "https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1";
+  const baseUrl = 'https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1';
 
-  // Load products on page load
+  // Load products on component mount
   useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      console.log('Loading products from:', `${baseUrl}/api-products`);
-      const response = await fetch(`${baseUrl}/api-products`);
-      const data = await response.json();
-      
-      console.log('Products response:', data);
-      
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load products');
+    const loadProducts = async () => {
+      try {
+        const productsUrl = `${baseUrl}/api-items`;
+        console.log('Loading products from:', productsUrl);
+        
+        const response = await fetch(productsUrl);
+        const data = await response.json();
+        console.log('Products response:', data);
+        
+        if (data.success && data.products) {
+          setProducts(data.products);
+          console.log('Products loaded successfully:', data.products.length);
+        }
+      } catch (error) {
+        console.error('Error loading products:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load products",
+          variant: "destructive",
+        });
       }
-      
-      setProducts(data.products || []);
-      console.log('Products loaded successfully:', data.products?.length || 0);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      toast({
-        title: "Error",
-        description: "Unable to load products",
-        variant: "destructive",
-      });
-    }
-  };
+    };
+
+    const loadFullProducts = async () => {
+      try {
+        const productsUrl = `${baseUrl}/api-products-internal-gt45dsqt1plqkwsxcz`;
+        console.log('Loading full products from:', productsUrl);
+        
+        const response = await fetch(productsUrl);
+        const data = await response.json();
+        console.log('Full products response:', data);
+        
+        if (data.success && data.products) {
+          setFullProducts(data.products);
+          console.log('Full products loaded successfully:', data.products.length);
+        }
+      } catch (error) {
+        console.error('Error loading full products:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load product details",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadProducts();
+    loadFullProducts();
+  }, [toast, baseUrl]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -112,7 +142,6 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!selectedProduct || !token || !quantity) {
       toast({
         title: "Error",
@@ -122,49 +151,37 @@ const Index = () => {
       return;
     }
 
-    const selectedProductData = products.find(p => p.id === selectedProduct);
-    if (!selectedProductData) {
-      toast({
-        title: "Error",
-        description: "Product not found",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
     setApiResult(null);
     
     try {
+      const selectedProductData = products.find(p => p.id === selectedProduct);
+      const productName = selectedProductData?.name || '';
+
       const response = await fetch(`${baseUrl}/api-process`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          product_name: selectedProductData.name,
+          product_name: productName,
           token: token,
           qty: parseInt(quantity)
         })
       });
 
       const data = await response.json();
+      setApiResult(data);
 
       if (data.success) {
-        setApiResult(data.api_response);
         toast({
           title: "Success",
           description: data.message || "Request processed successfully",
         });
-        
-        // Reset form
-        setSelectedProduct("");
-        setToken("");
-        setQuantity("");
       } else {
         toast({
           title: "Error",
-          description: data.message || data.error || "Error processing request",
+          description: data.message || "Request failed",
           variant: "destructive",
         });
       }
@@ -172,7 +189,7 @@ const Index = () => {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Communication error with server",
+        description: "Failed to process request",
         variant: "destructive",
       });
     } finally {
@@ -182,106 +199,163 @@ const Index = () => {
 
   const handleHistorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!historyToken) {
       toast({
         title: "Error",
-        description: "Please enter the token",
+        description: "Please enter a token",
         variant: "destructive",
       });
       return;
     }
 
     setHistoryLoading(true);
-    
-    try {
-      const response = await fetch(`${baseUrl}/api-history`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: historyToken
-        })
-      });
+    setTransactions([]);
 
+    try {
+      const response = await fetch(`${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`);
       const data = await response.json();
 
-      console.log('API Response:', data);
-      
-      setTransactions(data.transactions || []);
-      
-      if (!data.transactions || data.transactions.length === 0) {
+      if (data.success && data.transactions) {
+        setTransactions(data.transactions);
         toast({
-          title: "Info",
-          description: "No transactions found for this token",
+          title: "Success",
+          description: `Found ${data.transactions.length} transactions`,
         });
       } else {
         toast({
-          title: "Success",
-          description: `Found ${data.total_transactions || data.transactions.length} transactions`,
+          title: "Info",
+          description: data.message || "No transactions found",
         });
       }
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Error retrieving history",
+        description: "Failed to fetch transaction history",
         variant: "destructive",
       });
-      setTransactions([]);
     } finally {
       setHistoryLoading(false);
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "Copied!",
+        description: "URL copied to clipboard",
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    });
+  };
+
+  const generateProcessRequestUrl = () => {
+    if (!selectedProduct || !token || !quantity) return '';
+    const selectedProductData = products.find(p => p.id === selectedProduct);
+    const productName = selectedProductData?.name || '';
+    return `${baseUrl}/api-process?product=${encodeURIComponent(productName)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
+  };
+
+  const generateHistoryUrl = () => {
+    if (!historyToken) return '';
+    return `${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`;
+  };
+
+  const generateProductsUrl = () => {
+    return `${baseUrl}/api-items`;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">API SERVICE</h1>
-          <p className="text-sm text-green-600 font-medium">🔒 Secure API</p>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">API Management Dashboard</h1>
+          <p className="text-gray-600">Manage your API requests and view transaction history</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main form for request */}
-          <div>
-            <RequestForm
-              products={products}
-              selectedProduct={selectedProduct}
-              token={token}
-              quantity={quantity}
-              loading={loading}
-              onProductSelect={handleProductSelect}
-              onTokenChange={setToken}
-              onQuantityChange={setQuantity}
-              onSubmit={handleSubmit}
-              onCopyUrl={copyToClipboard}
-              generateProcessRequestUrl={generateProcessRequestUrl}
-              apiResult={apiResult}
-            />
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RequestForm
+            products={products}
+            selectedProduct={selectedProduct}
+            token={token}
+            quantity={quantity}
+            loading={loading}
+            onProductSelect={setSelectedProduct}
+            onTokenChange={setToken}
+            onQuantityChange={setQuantity}
+            onSubmit={handleSubmit}
+            onCopyUrl={copyToClipboard}
+            generateProcessRequestUrl={generateProcessRequestUrl}
+            apiResult={apiResult}
+          />
 
-          {/* Form for history */}
-          <div>
-            <HistoryForm
-              historyToken={historyToken}
-              historyLoading={historyLoading}
-              onHistoryTokenChange={setHistoryToken}
-              onHistorySubmit={handleHistorySubmit}
-              onCopyUrl={copyToClipboard}
-              generateHistoryUrl={generateHistoryUrl}
-            />
-            
-            <TransactionList transactions={transactions} />
-          </div>
+          <HistoryForm
+            historyToken={historyToken}
+            historyLoading={historyLoading}
+            onHistoryTokenChange={setHistoryToken}
+            onHistorySubmit={handleHistorySubmit}
+            onCopyUrl={copyToClipboard}
+            generateHistoryUrl={generateHistoryUrl}
+          />
+        </div>
 
-          {/* API URLs panel */}
+        <div className="mt-6">
           <ApiEndpointsPanel
             baseUrl={baseUrl}
             onCopyUrl={copyToClipboard}
             generateProductsUrl={generateProductsUrl}
           />
+        </div>
+
+        <TransactionList transactions={transactions} />
+
+        {/* Products Table */}
+        <div className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Products Inventory</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Quantity</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {fullProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-mono text-sm">{product.id}</TableCell>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-sm ${
+                          product.quantity === null 
+                            ? 'bg-gray-100 text-gray-500' 
+                            : product.quantity > 0 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                        }`}>
+                          {product.quantity === null ? 'N/A' : product.quantity}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {fullProducts.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  No products found
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
