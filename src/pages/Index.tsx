@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import RequestForm from '@/components/RequestForm';
@@ -11,6 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 interface Product {
   id: string;
   name: string;
+  fornitore_url: string;
+  payload_template: any;
+  http_method: string;
 }
 
 interface FullProduct {
@@ -328,3 +332,4 @@ const Index = () => {
 };
 
 export default Index;
+
