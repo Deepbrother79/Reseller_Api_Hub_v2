@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import RequestForm from '@/components/RequestForm';
@@ -10,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 interface Product {
   id: string;
   name: string;
-  quantity?: number;
 }
 
 interface FullProduct {
@@ -106,38 +106,34 @@ const Index = () => {
   }, [toast, baseUrl]);
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied",
-      description: "URL copied to clipboard",
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "Copied!",
+        description: "URL copied to clipboard",
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
     });
   };
 
-  const getSelectedProductData = () => {
-    return products.find(p => p.id === selectedProduct);
-  };
-
-  const handleProductSelect = (value: string) => {
-    console.log('Product selected:', value);
-    setSelectedProduct(value);
-  };
-
-  // Generate simplified API URLs using secure endpoints
   const generateProcessRequestUrl = () => {
-    const productData = getSelectedProductData();
-    if (!productData || !token || !quantity) return "";
-    
-    return `${baseUrl}/api-process?product=${encodeURIComponent(productData.name)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
+    if (!selectedProduct || !token || !quantity) return '';
+    const selectedProductData = products.find(p => p.id === selectedProduct);
+    const productName = selectedProductData?.name || '';
+    return `${baseUrl}/api-process?product=${encodeURIComponent(productName)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
   };
 
   const generateHistoryUrl = () => {
-    if (!historyToken) return "";
-    
+    if (!historyToken) return '';
     return `${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`;
   };
 
   const generateProductsUrl = () => {
-    return `${baseUrl}/api-products`;
+    return `${baseUrl}/api-items`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -237,37 +233,6 @@ const Index = () => {
     } finally {
       setHistoryLoading(false);
     }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast({
-        title: "Copied!",
-        description: "URL copied to clipboard",
-      });
-    }).catch(() => {
-      toast({
-        title: "Error",
-        description: "Failed to copy to clipboard",
-        variant: "destructive",
-      });
-    });
-  };
-
-  const generateProcessRequestUrl = () => {
-    if (!selectedProduct || !token || !quantity) return '';
-    const selectedProductData = products.find(p => p.id === selectedProduct);
-    const productName = selectedProductData?.name || '';
-    return `${baseUrl}/api-process?product=${encodeURIComponent(productName)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
-  };
-
-  const generateHistoryUrl = () => {
-    if (!historyToken) return '';
-    return `${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`;
-  };
-
-  const generateProductsUrl = () => {
-    return `${baseUrl}/api-items`;
   };
 
   return (
