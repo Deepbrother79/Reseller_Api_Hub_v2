@@ -18,7 +18,7 @@ serve(async (req) => {
 
     if (req.method === 'GET') {
       const url = new URL(req.url);
-      product_name = url.searchParams.get('product');
+      product_name = url.searchParams.get('product_name') || url.searchParams.get('product');
       token = url.searchParams.get('token');
       qty = parseInt(url.searchParams.get('qty') || '0');
     } else if (req.method === 'POST') {
@@ -37,7 +37,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Missing required parameters: product, token, qty' 
+          error: 'Missing required parameters: product_name, token, qty' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -62,8 +62,14 @@ serve(async (req) => {
 
     const data = await response.json();
 
+    // Rimuovi full_response dall'output se presente
+    const cleanedData = { ...data };
+    if (cleanedData.full_response) {
+      delete cleanedData.full_response;
+    }
+
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(cleanedData),
       { 
         status: response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

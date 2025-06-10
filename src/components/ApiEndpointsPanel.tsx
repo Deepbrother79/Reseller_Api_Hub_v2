@@ -48,7 +48,7 @@ const ApiEndpointsPanel: React.FC<ApiEndpointsPanelProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">GET</span>
-              <code className="text-xs">/api-products</code>
+              <code className="text-xs">/api-items</code>
               <span className="text-xs text-gray-500">- Retrieve all products</span>
             </div>
             <div className="flex items-center gap-2">
@@ -65,9 +65,9 @@ const ApiEndpointsPanel: React.FC<ApiEndpointsPanelProps> = ({
 
           <div className="mt-4 text-xs text-gray-500">
             <p><strong>Example URLs:</strong></p>
-            <p>• Process: <code>/api-process?product=Google&token=abc123&qty=5</code></p>
+            <p>• Process: <code>/api-process</code></p>
             <p>• History: <code>/api-history?token=abc123</code></p>
-            <p>• Products: <code>/api-products</code></p>
+            <p>• Products: <code>/api-items</code></p>
           </div>
         </div>
       </CardContent>

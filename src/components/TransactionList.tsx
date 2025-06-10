@@ -35,6 +35,9 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions }) => {
       <div className="space-y-3 max-h-64 overflow-y-auto">
         {transactions.map((transaction, index) => (
           <div key={transaction.id || index} className="p-3 bg-gray-50 rounded-lg">
+            <div className="text-sm text-gray-600 mb-2">
+              <p className="font-medium text-gray-800">Transaction ID: {transaction.id || transaction.transaction_id || 'N/A'}</p>
+            </div>
             <div className="flex justify-between items-start mb-2">
               <span className="font-medium">
                 {transaction.product_name || 'Unknown Product'}

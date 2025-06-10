@@ -28,7 +28,9 @@ interface RequestFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onCopyUrl: (url: string) => void;
   generateProcessRequestUrl: () => string;
+  generateProcessRequestBody: () => string;
   apiResult: any;
+  baseUrl: string;
 }
 
 const RequestForm: React.FC<RequestFormProps> = ({
@@ -43,7 +45,9 @@ const RequestForm: React.FC<RequestFormProps> = ({
   onSubmit,
   onCopyUrl,
   generateProcessRequestUrl,
-  apiResult
+  generateProcessRequestBody,
+  apiResult,
+  baseUrl
 }) => {
   return (
     <Card>
@@ -118,24 +122,43 @@ const RequestForm: React.FC<RequestFormProps> = ({
           </div>
         )}
 
-        {/* Show API URL for processing request */}
+        {/* Show API URL and Body for processing request */}
         {selectedProduct && token && quantity && (
           <div className="mt-6">
             <Separator className="mb-4" />
             <h3 className="font-semibold mb-3">Secure API Endpoint:</h3>
-            <div className="bg-gray-100 p-3 rounded-lg">
+            
+            {/* POST Request URL */}
+            <div className="bg-gray-100 p-3 rounded-lg mb-3">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium text-green-600">POST Request</span>
+                <span className="text-sm font-medium text-green-600">POST Request URL</span>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onCopyUrl(generateProcessRequestUrl())}
+                  onClick={() => onCopyUrl(`${baseUrl}/api-process`)}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
               <code className="text-xs bg-white p-2 rounded block break-all">
-                {generateProcessRequestUrl()}
+                {baseUrl}/api-process
+              </code>
+            </div>
+
+            {/* POST Request Body */}
+            <div className="bg-gray-100 p-3 rounded-lg">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium text-blue-600">POST Request Body</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCopyUrl(generateProcessRequestBody())}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <code className="text-xs bg-white p-2 rounded block break-all">
+                {generateProcessRequestBody()}
               </code>
             </div>
           </div>

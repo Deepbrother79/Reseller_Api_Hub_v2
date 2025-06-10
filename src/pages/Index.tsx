@@ -128,7 +128,18 @@ const Index = () => {
     if (!selectedProduct || !token || !quantity) return '';
     const selectedProductData = products.find(p => p.id === selectedProduct);
     const productName = selectedProductData?.name || '';
-    return `${baseUrl}/api-process?product=${encodeURIComponent(productName)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
+    return `${baseUrl}/api-process?product_name=${encodeURIComponent(productName)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
+  };
+
+  const generateProcessRequestBody = () => {
+    if (!selectedProduct || !token || !quantity) return '';
+    const selectedProductData = products.find(p => p.id === selectedProduct);
+    const productName = selectedProductData?.name || '';
+    return JSON.stringify({
+      product_name: productName,
+      token: token,
+      qty: parseInt(quantity)
+    });
   };
 
   const generateHistoryUrl = () => {
@@ -260,7 +271,9 @@ const Index = () => {
             onSubmit={handleSubmit}
             onCopyUrl={copyToClipboard}
             generateProcessRequestUrl={generateProcessRequestUrl}
+            generateProcessRequestBody={generateProcessRequestBody}
             apiResult={apiResult}
+            baseUrl={baseUrl}
           />
 
           <HistoryForm
@@ -332,4 +345,3 @@ const Index = () => {
 };
 
 export default Index;
-
