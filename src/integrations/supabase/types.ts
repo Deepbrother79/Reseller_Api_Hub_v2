@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      digital_products: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_used: boolean
+          product_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_used?: boolean
+          product_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_used?: boolean
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           condition_reply_output: string | null
@@ -19,6 +51,7 @@ export type Database = {
           name: string
           path_body: string | null
           payload_template: Json | null
+          product_type: string
           quantity: number | null
           regex_output: string | null
         }
@@ -31,6 +64,7 @@ export type Database = {
           name: string
           path_body?: string | null
           payload_template?: Json | null
+          product_type?: string
           quantity?: number | null
           regex_output?: string | null
         }
@@ -43,6 +77,7 @@ export type Database = {
           name?: string
           path_body?: string | null
           payload_template?: Json | null
+          product_type?: string
           quantity?: number | null
           regex_output?: string | null
         }
