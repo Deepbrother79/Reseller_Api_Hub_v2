@@ -46,7 +46,7 @@ export type Database = {
           condition_reply_output: string | null
           fornitore_url: string
           header_http: Json | null
-          http_method: string
+          http_method: string | null
           id: string
           name: string
           path_body: string | null
@@ -59,7 +59,7 @@ export type Database = {
           condition_reply_output?: string | null
           fornitore_url: string
           header_http?: Json | null
-          http_method?: string
+          http_method?: string | null
           id?: string
           name: string
           path_body?: string | null
@@ -72,7 +72,7 @@ export type Database = {
           condition_reply_output?: string | null
           fornitore_url?: string
           header_http?: Json | null
-          http_method?: string
+          http_method?: string | null
           id?: string
           name?: string
           path_body?: string | null
