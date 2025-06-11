@@ -4,16 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Copy } from "lucide-react";
 
 interface RefundFormProps {
   baseUrl: string;
+  onCopyUrl: (url: string) => void;
 }
 
-const RefundForm: React.FC<RefundFormProps> = ({ baseUrl }) => {
+const RefundForm: React.FC<RefundFormProps> = ({ baseUrl, onCopyUrl }) => {
   const [transactionId, setTransactionId] = useState('');
   const [loading, setLoading] = useState(false);
   const [refundResult, setRefundResult] = useState<any>(null);
   const { toast } = useToast();
+
+  const generateRefundUrl = () => {
+    return `${baseUrl}/api-refund`;
+  };
+
+  const generateRefundBody = () => {
+    if (!transactionId.trim()) return '';
+    return JSON.stringify({
+      transaction_id: transactionId
+    }, null, 2);
+  };
 
   const handleRefundRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +104,43 @@ const RefundForm: React.FC<RefundFormProps> = ({ baseUrl }) => {
             {loading ? 'Processing...' : 'Request Refund'}
           </Button>
         </form>
+
+        {/* API URL and Body Generation */}
+        {transactionId.trim() && (
+          <div className="mt-6 space-y-4">
+            <div className="bg-gray-100 p-3 rounded-lg">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium text-orange-600">POST - Refund URL</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCopyUrl(generateRefundUrl())}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <code className="text-xs bg-white p-2 rounded block break-all">
+                {generateRefundUrl()}
+              </code>
+            </div>
+
+            <div className="bg-gray-100 p-3 rounded-lg">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium text-orange-600">JSON Body</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCopyUrl(generateRefundBody())}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <pre className="text-xs bg-white p-2 rounded block break-all whitespace-pre-wrap">
+                {generateRefundBody()}
+              </pre>
+            </div>
+          </div>
+        )}
 
         {refundResult && (
           <div className="mt-4 p-3 rounded-lg border">

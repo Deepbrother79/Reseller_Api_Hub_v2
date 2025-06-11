@@ -299,7 +299,7 @@ const Index = () => {
         </div>
 
         <div className="mt-6">
-          <RefundForm baseUrl={baseUrl} />
+          <RefundForm baseUrl={baseUrl} onCopyUrl={copyToClipboard} />
         </div>
 
         <TransactionList transactions={transactions} />
