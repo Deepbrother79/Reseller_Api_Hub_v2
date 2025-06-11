@@ -124,6 +124,38 @@ export type Database = {
           },
         ]
       }
+      refund_transactions: {
+        Row: {
+          created_at: string
+          id: string
+          refund_status: string
+          response_message: string | null
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          refund_status: string
+          response_message?: string | null
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          refund_status?: string
+          response_message?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_transactions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: true
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tokens: {
         Row: {
           crediti: number

@@ -1,11 +1,10 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import RequestForm from '@/components/RequestForm';
 import HistoryForm from '@/components/HistoryForm';
 import ApiEndpointsPanel from '@/components/ApiEndpointsPanel';
 import TransactionList from '@/components/TransactionList';
+import RefundForm from '@/components/RefundForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -151,6 +150,10 @@ const Index = () => {
     return `${baseUrl}/api-items`;
   };
 
+  const generateRefundUrl = () => {
+    return `${baseUrl}/api-refund`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct || !token || !quantity) {
@@ -291,7 +294,12 @@ const Index = () => {
             baseUrl={baseUrl}
             onCopyUrl={copyToClipboard}
             generateProductsUrl={generateProductsUrl}
+            generateRefundUrl={generateRefundUrl}
           />
+        </div>
+
+        <div className="mt-6">
+          <RefundForm baseUrl={baseUrl} />
         </div>
 
         <TransactionList transactions={transactions} />

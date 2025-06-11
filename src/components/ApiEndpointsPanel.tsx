@@ -8,12 +8,14 @@ interface ApiEndpointsPanelProps {
   baseUrl: string;
   onCopyUrl: (url: string) => void;
   generateProductsUrl: () => string;
+  generateRefundUrl?: () => string;
 }
 
 const ApiEndpointsPanel: React.FC<ApiEndpointsPanelProps> = ({
   baseUrl,
   onCopyUrl,
-  generateProductsUrl
+  generateProductsUrl,
+  generateRefundUrl
 }) => {
   return (
     <Card>
@@ -61,13 +63,11 @@ const ApiEndpointsPanel: React.FC<ApiEndpointsPanelProps> = ({
               <code className="text-xs">/api-history</code>
               <span className="text-xs text-gray-500">- Get transaction history</span>
             </div>
-          </div>
-
-          <div className="mt-4 text-xs text-gray-500">
-            <p><strong>Example URLs:</strong></p>
-            <p>• Process: <code>/api-process</code></p>
-            <p>• History: <code>/api-history?token=abc123</code></p>
-            <p>• Products: <code>/api-items</code></p>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">POST</span>
+              <code className="text-xs">/api-refund</code>
+              <span className="text-xs text-gray-500">- Request refund</span>
+            </div>
           </div>
         </div>
       </CardContent>
