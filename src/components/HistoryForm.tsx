@@ -15,6 +15,7 @@ interface HistoryFormProps {
   onHistorySubmit: (e: React.FormEvent) => void;
   onCopyUrl: (url: string) => void;
   generateHistoryUrl: () => string;
+  generateCreditsUrl: () => string;
 }
 
 const HistoryForm: React.FC<HistoryFormProps> = ({
@@ -24,7 +25,8 @@ const HistoryForm: React.FC<HistoryFormProps> = ({
   onHistoryTokenChange,
   onHistorySubmit,
   onCopyUrl,
-  generateHistoryUrl
+  generateHistoryUrl,
+  generateCreditsUrl
 }) => {
   return (
     <Card>
@@ -57,14 +59,33 @@ const HistoryForm: React.FC<HistoryFormProps> = ({
           </Button>
         </form>
 
-        {/* Show API URL for history */}
+        {/* Show API URLs when token is entered */}
         {historyToken && (
           <div className="mt-6">
             <Separator className="mb-4" />
-            <h3 className="font-semibold mb-3">Secure API Endpoint:</h3>
+            <h3 className="font-semibold mb-3">Secure API Endpoints:</h3>
+            
+            {/* Credits API URL */}
+            <div className="bg-gray-100 p-3 rounded-lg mb-4">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium text-green-600">GET Credits</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCopyUrl(generateCreditsUrl())}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <code className="text-xs bg-white p-2 rounded block break-all">
+                {generateCreditsUrl()}
+              </code>
+            </div>
+
+            {/* History API URL */}
             <div className="bg-gray-100 p-3 rounded-lg">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium text-blue-600">GET Request</span>
+                <span className="text-sm font-medium text-blue-600">GET History</span>
                 <Button
                   size="sm"
                   variant="outline"

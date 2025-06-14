@@ -149,6 +149,11 @@ const Index = () => {
     return `${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`;
   };
 
+  const generateCreditsUrl = () => {
+    if (!historyToken) return '';
+    return `${baseUrl}/api-credits?token=${encodeURIComponent(historyToken)}`;
+  };
+
   const generateProductsUrl = () => {
     return `${baseUrl}/api-items`;
   };
@@ -324,6 +329,7 @@ const Index = () => {
             onHistorySubmit={handleHistorySubmit}
             onCopyUrl={copyToClipboard}
             generateHistoryUrl={generateHistoryUrl}
+            generateCreditsUrl={generateCreditsUrl}
           />
         </div>
 
