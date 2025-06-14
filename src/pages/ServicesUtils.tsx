@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import ServiceNavigation from "@/components/services/ServiceNavigation";
 import ReadInboxService from "@/components/services/ReadInboxService";
 import Get2FAService from "@/components/services/Get2FAService";
+import GetOAuth2Service from "@/components/services/GetOAuth2Service";
 
 interface EmailResult {
   mail: string;
@@ -31,7 +32,7 @@ const ServicesUtils = () => {
   const services = [
     { id: 'get-2fa', name: 'Get 2FA', disabled: false },
     { id: 'read-inbox', name: 'Read Inbox Mail', disabled: false },
-    { id: 'get-oauth2', name: 'Get Oauth2 Token', disabled: true },
+    { id: 'get-oauth2', name: 'Get Oauth2 Token', disabled: false },
     { id: 'capcut-pro', name: 'Capcut Pro', disabled: true }
   ];
 
@@ -246,7 +247,11 @@ const ServicesUtils = () => {
           />
         )}
 
-        {activeService !== 'read-inbox' && activeService !== 'get-2fa' && (
+        {activeService === 'get-oauth2' && (
+          <GetOAuth2Service onCopy={copyToClipboard} />
+        )}
+
+        {activeService !== 'read-inbox' && activeService !== 'get-2fa' && activeService !== 'get-oauth2' && (
           <Card>
             <CardContent className="text-center py-12">
               <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
