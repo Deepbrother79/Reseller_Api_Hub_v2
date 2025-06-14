@@ -17,51 +17,66 @@ const Get2FAService: React.FC<Get2FAServiceProps> = ({ onCopy }) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const simpleHmac = (key: Uint8Array, data: Uint8Array): Uint8Array => {
-    // Simplified HMAC implementation for demonstration
-    // In production, use WebCrypto API or proper crypto library
-    const result = new Uint8Array(20);
-    for (let i = 0; i < result.length; i++) {
-      result[i] = (key[i % key.length] ^ data[i % data.length]) & 0xff;
+  const base32Decode = (encoded: string): Uint8Array => {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = '';
+    
+    // Remove whitespace and convert to uppercase
+    encoded = encoded.replace(/\s/g, '').toUpperCase();
+    
+    for (let i = 0; i < encoded.length; i++) {
+      const char = encoded[i];
+      const index = alphabet.indexOf(char);
+      if (index === -1 && char !== '=') {
+        throw new Error(`Invalid base32 character: ${char}`);
+      }
+      if (char !== '=') {
+        bits += index.toString(2).padStart(5, '0');
+      }
     }
-    return result;
+    
+    // Convert bits to bytes
+    const bytes = [];
+    for (let i = 0; i < bits.length; i += 8) {
+      const byte = bits.substr(i, 8);
+      if (byte.length === 8) {
+        bytes.push(parseInt(byte, 2));
+      }
+    }
+    
+    return new Uint8Array(bytes);
   };
 
-  const generateTOTP = (secret: string, timeStep: number = 30, digits: number = 6): string => {
+  const hmacSha1 = async (key: Uint8Array, message: Uint8Array): Promise<Uint8Array> => {
+    // Use Web Crypto API for proper HMAC-SHA1
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      key,
+      { name: 'HMAC', hash: 'SHA-1' },
+      false,
+      ['sign']
+    );
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, message);
+    return new Uint8Array(signature);
+  };
+
+  const generateTOTP = async (secret: string, timeStep: number = 30, digits: number = 6): Promise<string> => {
     try {
-      // Base32 decode
-      const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-      let bits = '';
-      for (let i = 0; i < secret.length; i++) {
-        const val = base32Chars.indexOf(secret.charAt(i).toUpperCase());
-        if (val === -1) throw new Error('Invalid base32 character');
-        bits += val.toString(2).padStart(5, '0');
-      }
-      
-      // Convert to bytes
-      const bytes = [];
-      for (let i = 0; i < bits.length; i += 8) {
-        bytes.push(parseInt(bits.substr(i, 8), 2));
-      }
+      // Decode the base32 secret
+      const key = base32Decode(secret);
       
       // Get current time step
       const epoch = Math.floor(Date.now() / 1000);
-      let counter = Math.floor(epoch / timeStep);
+      const counter = Math.floor(epoch / timeStep);
       
-      // Convert counter to 8-byte array
-      const counterBytes = new Array(8);
-      for (let i = 7; i >= 0; i--) {
-        counterBytes[i] = counter & 0xff;
-        counter >>>= 8;
-      }
+      // Convert counter to 8-byte big-endian array
+      const counterBytes = new ArrayBuffer(8);
+      const counterView = new DataView(counterBytes);
+      counterView.setUint32(4, counter, false); // false = big-endian
       
-      // HMAC-SHA1 simulation (simplified for demonstration)
-      // In production, you'd use a proper crypto library
-      const hmac = simpleHmac(new Uint8Array(bytes), new Uint8Array(counterBytes));
-      
-      if (!hmac || hmac.length === 0) {
-        throw new Error('HMAC generation failed');
-      }
+      // Generate HMAC-SHA1
+      const hmac = await hmacSha1(key, new Uint8Array(counterBytes));
       
       // Dynamic truncation
       const offset = hmac[hmac.length - 1] & 0x0f;
@@ -70,8 +85,11 @@ const Get2FAService: React.FC<Get2FAServiceProps> = ({ onCopy }) => {
                    ((hmac[offset + 2] & 0xff) << 8) |
                    (hmac[offset + 3] & 0xff);
       
-      return (code % Math.pow(10, digits)).toString().padStart(digits, '0');
+      // Generate the final TOTP code
+      const totp = (code % Math.pow(10, digits)).toString().padStart(digits, '0');
+      return totp;
     } catch (error) {
+      console.error('TOTP generation error:', error);
       throw new Error('Invalid authenticator string format');
     }
   };
@@ -101,7 +119,7 @@ const Get2FAService: React.FC<Get2FAServiceProps> = ({ onCopy }) => {
       secret = secret.replace(/\s/g, '').toUpperCase();
       
       // Generate TOTP code
-      const code = generateTOTP(secret);
+      const code = await generateTOTP(secret);
       setGeneratedCode(code);
       
       toast({
