@@ -70,11 +70,11 @@ serve(async (req) => {
       );
     }
 
-    if (tokenData.crediti < qty) {
+    if (tokenData.credits < qty) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: `Insufficient credits. Available: ${tokenData.crediti}, Required: ${qty}` 
+          message: `Insufficient credits. Available: ${tokenData.credits}, Required: ${qty}` 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -263,7 +263,7 @@ serve(async (req) => {
     if (status === 'success') {
       const { error: updateError } = await supabase
         .from('tokens')
-        .update({ crediti: tokenData.crediti - qty })
+        .update({ credits: tokenData.credits - qty })
         .eq('token', token);
 
       if (updateError) {
@@ -282,7 +282,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: status === 'success', 
         message: status === 'success' 
-          ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${tokenData.crediti - qty}`
+          ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${tokenData.credits - qty}`
           : "Request processed but failed",
         api_response: filteredResponse
       }),
