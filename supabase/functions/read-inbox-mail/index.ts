@@ -30,6 +30,7 @@ serve(async (req) => {
 
     const results: EmailResult[] = [];
     const allowedProducts = ['HOTMAIL-NEW-LIVE-1-12H', 'OUTLOOK-NEW-LIVE-1-12H'];
+    const EMAIL_STRINGS_PRODUCT_NAME = 'EMAIL-INBOX-READER'; // Prodotto digitale specifico per email strings
 
     // Process transaction IDs
     if (transaction_ids && transaction_ids.length > 0) {
@@ -81,7 +82,7 @@ serve(async (req) => {
       }
     }
 
-    // Process email strings
+    // Process email strings - ora richiede un token specifico per un prodotto digitale
     if (email_strings && email_strings.length > 0) {
       if (!token) {
         return new Response(
@@ -93,17 +94,94 @@ serve(async (req) => {
         );
       }
 
-      // Verify token (you can implement token validation logic here)
+      // Verifica che il token sia valido per il prodotto EMAIL-INBOX-READER
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('name', EMAIL_STRINGS_PRODUCT_NAME)
+        .eq('product_type', 'digital')
+        .single();
+
+      if (productError || !product) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: `Product ${EMAIL_STRINGS_PRODUCT_NAME} not found or not configured as digital product` 
+          }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Verifica il token e i crediti per il prodotto specifico
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('tokens')
+        .select('*')
+        .eq('token', token)
+        .eq('product_id', product.id)
+        .single();
+
+      if (tokenError || !tokenData) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: `Invalid token or token not authorized for ${EMAIL_STRINGS_PRODUCT_NAME} product` 
+          }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const emailStringsCount = email_strings.length;
+      if (tokenData.credits < emailStringsCount) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: `Insufficient credits for ${EMAIL_STRINGS_PRODUCT_NAME}. Available: ${tokenData.credits}, Required: ${emailStringsCount}` 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const limitedEmailStrings = email_strings.slice(0, 10);
+      let processedCount = 0;
       
       for (const emailString of limitedEmailStrings) {
         try {
           const emailData = await processEmailCredentials(emailString, supabase);
           if (emailData.length > 0) {
             results.push(...emailData);
+            processedCount++;
           }
         } catch (error) {
           console.error(`Error processing email string:`, error);
+        }
+      }
+
+      // Decrementa i crediti solo per le email effettivamente processate
+      if (processedCount > 0) {
+        const { error: updateError } = await supabase
+          .from('tokens')
+          .update({ credits: tokenData.credits - processedCount })
+          .eq('token', token);
+
+        if (updateError) {
+          console.error('Failed to update credits:', updateError);
+        }
+
+        // Crea una transazione per tracciare l'uso del servizio
+        const { error: transactionError } = await supabase
+          .from('transactions')
+          .insert({
+            token: token,
+            product_id: product.id,
+            product_name: EMAIL_STRINGS_PRODUCT_NAME,
+            qty: processedCount,
+            status: 'success',
+            response_data: { processed_emails: processedCount, total_results: results.length },
+            output_result: [`Processed ${processedCount} email strings successfully`]
+          });
+
+        if (transactionError) {
+          console.error('Failed to create transaction record:', transactionError);
         }
       }
     }

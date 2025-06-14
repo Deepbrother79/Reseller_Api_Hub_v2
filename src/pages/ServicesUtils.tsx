@@ -9,6 +9,7 @@ import { Copy, Mail, Clock, FileText, Hash, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import EmailContentCell from "@/components/EmailContentCell";
 
 interface EmailResult {
   mail: string;
@@ -216,10 +217,8 @@ const ServicesUtils = () => {
                             <Clock className="h-4 w-4" />
                             {result.time}
                           </TableCell>
-                          <TableCell className="max-w-xs">
-                            <div className="truncate text-sm text-gray-600">
-                              {result.content}
-                            </div>
+                          <TableCell>
+                            <EmailContentCell content={result.content} />
                           </TableCell>
                           <TableCell>
                             {result.code && (
