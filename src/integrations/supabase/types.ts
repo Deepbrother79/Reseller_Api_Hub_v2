@@ -158,19 +158,19 @@ export type Database = {
       }
       tokens: {
         Row: {
-          crediti: number
+          credits: number
           name: string
           product_id: string
           token: string
         }
         Insert: {
-          crediti?: number
+          credits?: number
           name?: string
           product_id: string
           token: string
         }
         Update: {
-          crediti?: number
+          credits?: number
           name?: string
           product_id?: string
           token?: string

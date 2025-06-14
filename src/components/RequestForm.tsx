@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Copy } from "lucide-react";
+import ProductTooltip from './ProductTooltip';
 
 interface Product {
   id: string;
@@ -14,6 +14,7 @@ interface Product {
   fornitore_url: string;
   payload_template: any;
   http_method: string;
+  description?: string;
 }
 
 interface RequestFormProps {
@@ -49,6 +50,8 @@ const RequestForm: React.FC<RequestFormProps> = ({
   apiResult,
   baseUrl
 }) => {
+  const selectedProductData = products.find(p => p.id === selectedProduct);
+
   return (
     <Card>
       <CardHeader>
@@ -75,6 +78,20 @@ const RequestForm: React.FC<RequestFormProps> = ({
             </Select>
             {products.length === 0 && (
               <p className="text-sm text-gray-500">Loading products...</p>
+            )}
+            
+            {/* Mostra descrizione prodotto selezionato */}
+            {selectedProductData && (
+              <div className="mt-2">
+                <ProductTooltip 
+                  productName={selectedProductData.name}
+                  description={selectedProductData.description || `API endpoint: ${selectedProductData.fornitore_url}`}
+                >
+                  <div className="text-sm text-gray-600 p-2 bg-blue-50 rounded border-l-4 border-blue-200">
+                    <strong>Selected:</strong> {selectedProductData.name}
+                  </div>
+                </ProductTooltip>
+              </div>
             )}
           </div>
 
