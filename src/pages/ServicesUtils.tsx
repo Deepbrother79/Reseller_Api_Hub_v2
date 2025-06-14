@@ -1,15 +1,13 @@
+
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Copy, Mail, Clock, FileText, Hash, Home } from "lucide-react";
+import { Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import EmailContentCell from "@/components/EmailContentCell";
+import ServiceNavigation from "@/components/services/ServiceNavigation";
+import ReadInboxService from "@/components/services/ReadInboxService";
 
 interface EmailResult {
   mail: string;
@@ -36,30 +34,12 @@ const ServicesUtils = () => {
     { id: 'capcut-pro', name: 'Capcut Pro', disabled: true }
   ];
 
-  const baseUrl = 'https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1';
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
       title: "Copied!",
       description: "Content copied to clipboard",
     });
-  };
-
-  const generateReadInboxUrl = () => {
-    return `${baseUrl}/read-inbox-mail`;
-  };
-
-  const generateReadInboxBody = () => {
-    if (!transactionIds.trim() && !emailStrings.trim()) return '';
-    
-    const body = {
-      transaction_ids: transactionIds.trim() ? transactionIds.split('\n').filter(id => id.trim()) : [],
-      email_strings: emailStrings.trim() ? emailStrings.split('\n').filter(str => str.trim()) : [],
-      token: token.trim() || null
-    };
-    
-    return JSON.stringify(body, null, 2);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,200 +108,27 @@ const ServicesUtils = () => {
           </div>
         </div>
 
-        {/* Service Navigation */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {services.map((service) => (
-            <Button
-              key={service.id}
-              variant={activeService === service.id ? "default" : "outline"}
-              onClick={() => !service.disabled && setActiveService(service.id)}
-              disabled={service.disabled}
-              className="relative"
-            >
-              {service.name}
-              {service.disabled && (
-                <span className="absolute -top-1 -right-1 bg-yellow-500 text-xs text-white px-1 rounded-full">
-                  Soon
-                </span>
-              )}
-            </Button>
-          ))}
-        </div>
+        <ServiceNavigation
+          services={services}
+          activeService={activeService}
+          onServiceChange={setActiveService}
+        />
 
-        {/* Read Inbox Mail Service */}
         {activeService === 'read-inbox' && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  Read Inbox Mail
-                </CardTitle>
-                <CardDescription>
-                  Extract emails from Microsoft Outlook/Hotmail accounts using transaction IDs or direct email credentials
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="transaction-ids">Transaction IDs (one per line, max 10)</Label>
-                      <Textarea
-                        id="transaction-ids"
-                        placeholder="Enter transaction IDs..."
-                        value={transactionIds}
-                        onChange={(e) => setTransactionIds(e.target.value)}
-                        rows={5}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email-strings">Email Strings (email|password|refresh_token|client_id, max 10)</Label>
-                      <Textarea
-                        id="email-strings"
-                        placeholder="email@example.com|password|refresh_token|client_id"
-                        value={emailStrings}
-                        onChange={(e) => setEmailStrings(e.target.value)}
-                        rows={5}
-                      />
-                    </div>
-                  </div>
-                  
-                  {emailStrings.trim() && (
-                    <div className="space-y-2">
-                      <Label htmlFor="token">Authorization Token (required for email strings)</Label>
-                      <Input
-                        id="token"
-                        type="text"
-                        placeholder="Enter your authorization token"
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? "Processing..." : "Read Inbox Mail"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            {/* API Endpoints Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>🔗 API Endpoints</CardTitle>
-                <CardDescription>
-                  Copy these URLs and JSON bodies to use the API directly
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* POST URL */}
-                <div className="bg-gray-100 p-3 rounded-lg">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-sm font-medium text-blue-600">POST - Read Inbox Mail URL</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(generateReadInboxUrl())}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <code className="text-xs bg-white p-2 rounded block break-all">
-                    {generateReadInboxUrl()}
-                  </code>
-                </div>
-
-                {/* JSON Body */}
-                {(transactionIds.trim() || emailStrings.trim()) && (
-                  <div className="bg-gray-100 p-3 rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-medium text-blue-600">JSON Body</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => copyToClipboard(generateReadInboxBody())}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <pre className="text-xs bg-white p-2 rounded block break-all whitespace-pre-wrap">
-                      {generateReadInboxBody()}
-                    </pre>
-                  </div>
-                )}
-
-                {/* API Documentation */}
-                <div className="text-sm text-gray-600 space-y-2">
-                  <p><strong>Method:</strong> POST</p>
-                  <p><strong>Content-Type:</strong> application/json</p>
-                  <p><strong>Parameters:</strong></p>
-                  <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li><code>transaction_ids</code> - Array of transaction IDs (max 10)</li>
-                    <li><code>email_strings</code> - Array of email credential strings (max 10)</li>
-                    <li><code>token</code> - Authorization token (required for email_strings)</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Results Table */}
-            {results.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Email Results
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Mail</TableHead>
-                        <TableHead>From</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Content</TableHead>
-                        <TableHead>Code</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {results.map((result, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{result.mail}</TableCell>
-                          <TableCell>{result.from}</TableCell>
-                          <TableCell className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {result.time}
-                          </TableCell>
-                          <TableCell>
-                            <EmailContentCell content={result.content} />
-                          </TableCell>
-                          <TableCell>
-                            {result.code && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => copyToClipboard(result.code)}
-                                className="flex items-center gap-1"
-                              >
-                                <Hash className="h-3 w-3" />
-                                {result.code}
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          <ReadInboxService
+            transactionIds={transactionIds}
+            setTransactionIds={setTransactionIds}
+            emailStrings={emailStrings}
+            setEmailStrings={setEmailStrings}
+            token={token}
+            setToken={setToken}
+            loading={loading}
+            results={results}
+            onSubmit={handleSubmit}
+            onCopy={copyToClipboard}
+          />
         )}
 
-        {/* Placeholder for other services */}
         {activeService !== 'read-inbox' && (
           <Card>
             <CardContent className="text-center py-12">
