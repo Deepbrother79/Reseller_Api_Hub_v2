@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import ServiceNavigation from "@/components/services/ServiceNavigation";
 import ReadInboxService from "@/components/services/ReadInboxService";
+import Get2FAService from "@/components/services/Get2FAService";
 
 interface EmailResult {
   mail: string;
@@ -27,8 +27,7 @@ const ServicesUtils = () => {
   const { toast } = useToast();
 
   const services = [
-    { id: 'get-2fa', name: 'Get 2FA', disabled: true },
-    { id: 'get-code-mail', name: 'Get Code Mail', disabled: true },
+    { id: 'get-2fa', name: 'Get 2FA', disabled: false },
     { id: 'read-inbox', name: 'Read Inbox Mail', disabled: false },
     { id: 'get-oauth2', name: 'Get Oauth2 Token', disabled: true },
     { id: 'capcut-pro', name: 'Capcut Pro', disabled: true }
@@ -114,6 +113,10 @@ const ServicesUtils = () => {
           onServiceChange={setActiveService}
         />
 
+        {activeService === 'get-2fa' && (
+          <Get2FAService onCopy={copyToClipboard} />
+        )}
+
         {activeService === 'read-inbox' && (
           <ReadInboxService
             transactionIds={transactionIds}
@@ -129,7 +132,7 @@ const ServicesUtils = () => {
           />
         )}
 
-        {activeService !== 'read-inbox' && (
+        {activeService !== 'read-inbox' && activeService !== 'get-2fa' && (
           <Card>
             <CardContent className="text-center py-12">
               <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
