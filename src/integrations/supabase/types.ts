@@ -41,6 +41,36 @@ export type Database = {
           },
         ]
       }
+      email_extraction_patterns: {
+        Row: {
+          created_at: string
+          description: string | null
+          from_email: string
+          id: string
+          pattern_name: string
+          regex_pattern: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          from_email: string
+          id?: string
+          pattern_name: string
+          regex_pattern: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          from_email?: string
+          id?: string
+          pattern_name?: string
+          regex_pattern?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           condition_reply_output: string | null
