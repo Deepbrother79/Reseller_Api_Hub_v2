@@ -54,6 +54,7 @@ export type Database = {
           product_type: string
           quantity: number | null
           regex_output: string | null
+          short_description: string | null
         }
         Insert: {
           condition_reply_output?: string | null
@@ -67,6 +68,7 @@ export type Database = {
           product_type?: string
           quantity?: number | null
           regex_output?: string | null
+          short_description?: string | null
         }
         Update: {
           condition_reply_output?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           product_type?: string
           quantity?: number | null
           regex_output?: string | null
+          short_description?: string | null
         }
         Relationships: []
       }

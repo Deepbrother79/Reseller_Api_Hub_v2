@@ -14,7 +14,7 @@ interface Product {
   fornitore_url: string;
   payload_template: any;
   http_method: string;
-  description?: string;
+  short_description?: string;
 }
 
 interface RequestFormProps {
@@ -85,10 +85,15 @@ const RequestForm: React.FC<RequestFormProps> = ({
               <div className="mt-2">
                 <ProductTooltip 
                   productName={selectedProductData.name}
-                  description={selectedProductData.description || `API endpoint: ${selectedProductData.fornitore_url}`}
+                  description={selectedProductData.short_description || `API endpoint: ${selectedProductData.fornitore_url}`}
                 >
                   <div className="text-sm text-gray-600 p-2 bg-blue-50 rounded border-l-4 border-blue-200">
                     <strong>Selected:</strong> {selectedProductData.name}
+                    {selectedProductData.short_description && (
+                      <div className="mt-1 text-xs text-gray-500">
+                        {selectedProductData.short_description}
+                      </div>
+                    )}
                   </div>
                 </ProductTooltip>
               </div>

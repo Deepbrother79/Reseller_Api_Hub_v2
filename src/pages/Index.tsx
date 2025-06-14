@@ -14,6 +14,7 @@ interface Product {
   fornitore_url: string;
   payload_template: any;
   http_method: string;
+  short_description?: string;
 }
 
 interface FullProduct {
