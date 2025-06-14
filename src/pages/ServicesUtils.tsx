@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -116,9 +115,27 @@ const ServicesUtils = () => {
 
       if (error) {
         console.error('Supabase function error:', error);
+        
+        // Try to parse the error message for specific errors
+        let errorMessage = "Server returned error";
+        try {
+          if (error.message) {
+            const errorData = JSON.parse(error.message);
+            if (errorData.message) {
+              errorMessage = errorData.message;
+            } else if (errorData.error_description) {
+              errorMessage = `Authentication error: ${errorData.error_description}`;
+            } else if (errorData.error) {
+              errorMessage = `Error: ${errorData.error}`;
+            }
+          }
+        } catch {
+          errorMessage = error.message || "Unknown server error";
+        }
+        
         toast({
           title: "Error",
-          description: `Server returned error: ${error.message}`,
+          description: errorMessage,
           variant: "destructive"
         });
         return;
@@ -126,45 +143,51 @@ const ServicesUtils = () => {
 
       console.log('Response received:', data);
 
-      if (data.success) {
+      if (data && data.success) {
         const resultsCount = data.results?.length || 0;
         setResults(data.results || []);
         
-        if (resultsCount === 0) {
-          // Check if there were processing errors or warnings
-          if (data.warnings && data.warnings.length > 0) {
-            const warningMessage = data.warnings.join('; ');
-            toast({
-              title: "Warning",
-              description: warningMessage,
-              variant: "destructive"
-            });
-          } else if (useTransactionIds) {
-            toast({
-              title: "Warning",
-              description: "No emails found. Please verify that the transaction IDs are correct and from compatible products (HOTMAIL-NEW-LIVE-1-12H, OUTLOOK-NEW-LIVE-1-12H)",
-              variant: "destructive"
-            });
-          } else {
-            toast({
-              title: "Warning", 
-              description: "No emails found. Please verify that the email credentials are correct and valid",
-              variant: "destructive"
-            });
-          }
-        } else {
-          toast({
-            title: "Success",
-            description: `Processed ${resultsCount} emails successfully`,
-          });
-        }
+        toast({
+          title: "Success",
+          description: `Processed ${resultsCount} emails successfully`,
+        });
       } else {
-        // Server returned an error
-        let errorMessage = data.message || "Failed to process request";
+        // Server returned an error response
+        let errorMessage = "Failed to process request";
         
-        // Include detailed errors if available
-        if (data.errors && data.errors.length > 0) {
-          errorMessage = data.errors.join('; ');
+        if (data && data.message) {
+          errorMessage = data.message;
+        } else if (data && data.error) {
+          errorMessage = data.error;
+        }
+        
+        // Handle specific error types with custom messages
+        if (data && data.error_type) {
+          switch (data.error_type) {
+            case "invalid_transaction_id":
+              errorMessage = `Invalid Transaction ID: ${errorMessage}`;
+              break;
+            case "invalid_token":
+              errorMessage = `Invalid Token: ${errorMessage}`;
+              break;
+            case "missing_token":
+              errorMessage = `Missing Token: ${errorMessage}`;
+              break;
+            case "incompatible_product":
+              errorMessage = `Product Error: ${errorMessage}`;
+              break;
+            case "server_error":
+              errorMessage = `Server Response Error: ${errorMessage}`;
+              break;
+            case "email_credentials_error":
+              errorMessage = `Email Credentials Error: ${errorMessage}`;
+              break;
+            case "no_results":
+              errorMessage = `No Results: ${errorMessage}`;
+              break;
+            default:
+              errorMessage = `Error: ${errorMessage}`;
+          }
         }
         
         toast({
@@ -176,18 +199,19 @@ const ServicesUtils = () => {
     } catch (error: any) {
       console.error('Error processing inbox:', error);
       
-      // Try to parse error message if it's a JSON response
-      let errorMessage = "Failed to process inbox mail";
+      let errorMessage = "Server Response Error: Failed to process inbox mail";
       if (error.message) {
         try {
           const errorData = JSON.parse(error.message);
           if (errorData.error_description) {
-            errorMessage = `Authentication error: ${errorData.error_description}`;
+            errorMessage = `Authentication Error: ${errorData.error_description}`;
           } else if (errorData.error) {
-            errorMessage = `Error: ${errorData.error}`;
+            errorMessage = `Server Error: ${errorData.error}`;
+          } else if (errorData.message) {
+            errorMessage = `Server Response Error: ${errorData.message}`;
           }
         } catch {
-          errorMessage = error.message;
+          errorMessage = `Server Response Error: ${error.message}`;
         }
       }
       

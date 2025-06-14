@@ -49,16 +49,26 @@ serve(async (req) => {
             .single();
 
           if (transactionError || !transaction) {
-            errors.push(`Transaction ID not found: ${transactionId}`);
-            console.log(`Transaction not found: ${transactionId}`);
-            continue;
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                message: `Invalid Transaction ID: ${transactionId}. Transaction not found in database.`,
+                error_type: "invalid_transaction_id"
+              }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
           }
 
           // Check if product is compatible with inbox reading
           if (!transaction.products.inbox_compatible) {
-            errors.push(`Product not compatible with inbox reading: ${transaction.products.name} (Transaction: ${transactionId})`);
-            console.log(`Product not compatible with inbox reading: ${transaction.products.name}`);
-            continue;
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                message: `Product not compatible with inbox reading: ${transaction.products.name} (Transaction: ${transactionId}). Only HOTMAIL-NEW-LIVE-1-12H and OUTLOOK-NEW-LIVE-1-12H are supported.`,
+                error_type: "incompatible_product"
+              }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
           }
 
           // Extract email credentials from output_result
@@ -70,20 +80,38 @@ serve(async (req) => {
           } else if (typeof outputResult === 'string') {
             emailCredentials = outputResult;
           } else {
-            errors.push(`Invalid output_result format for transaction: ${transactionId}`);
-            console.log('Invalid output_result format');
-            continue;
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                message: `Invalid output format for transaction: ${transactionId}`,
+                error_type: "invalid_output_format"
+              }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
           }
 
           const emailData = await processEmailCredentials(emailCredentials, supabase);
           if (emailData.success) {
             results.push(...emailData.results);
           } else {
-            errors.push(`Failed to process transaction ${transactionId}: ${emailData.error}`);
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                message: emailData.error,
+                error_type: "email_processing_error"
+              }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
           }
         } catch (error) {
-          errors.push(`Error processing transaction ${transactionId}: ${error.message}`);
-          console.error(`Error processing transaction ${transactionId}:`, error);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: `Server error processing transaction ${transactionId}: ${error.message}`,
+              error_type: "server_error"
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
       }
     }
@@ -94,7 +122,8 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: "Token required for email string processing. You need a token for the EMAIL-INBOX-READER product." 
+            message: "Invalid Token: Authorization token is required for email string processing. You need a valid token for the EMAIL-INBOX-READER product.",
+            error_type: "missing_token"
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -112,7 +141,8 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: `Product ${EMAIL_STRINGS_PRODUCT_NAME} not found or not configured as digital product` 
+            message: `Product ${EMAIL_STRINGS_PRODUCT_NAME} not found or not configured as digital product`,
+            error_type: "product_not_found"
           }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -129,7 +159,8 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: `Invalid token or token not authorized for ${EMAIL_STRINGS_PRODUCT_NAME} product. Please create a token for the EMAIL-INBOX-READER product.` 
+            message: `Invalid Token: Token not found or not authorized for ${EMAIL_STRINGS_PRODUCT_NAME} product. Please verify your token is correct and valid.`,
+            error_type: "invalid_token"
           }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -140,7 +171,8 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: `Insufficient credits for ${EMAIL_STRINGS_PRODUCT_NAME}. Available: ${tokenData.credits}, Required: ${emailStringsCount}` 
+            message: `Insufficient credits for ${EMAIL_STRINGS_PRODUCT_NAME}. Available: ${tokenData.credits}, Required: ${emailStringsCount}`,
+            error_type: "insufficient_credits"
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -156,11 +188,24 @@ serve(async (req) => {
             results.push(...emailData.results);
             processedCount++;
           } else {
-            errors.push(`Failed to process email credentials: ${emailData.error}`);
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                message: emailData.error,
+                error_type: "email_credentials_error"
+              }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
           }
         } catch (error) {
-          errors.push(`Error processing email string: ${error.message}`);
-          console.error(`Error processing email string:`, error);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: `Server error processing email credentials: ${error.message}`,
+              error_type: "server_error"
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
       }
 
@@ -193,18 +238,13 @@ serve(async (req) => {
       }
     }
 
-    // Return response with detailed error information
-    if (results.length === 0 && errors.length > 0) {
+    // Check if we have results
+    if (results.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "No emails could be processed",
-          errors: errors,
-          info: {
-            transaction_ids_processed: transaction_ids ? transaction_ids.length : 0,
-            email_strings_processed: email_strings ? email_strings.length : 0,
-            compatible_products: "Only transactions from inbox-compatible products (HOTMAIL-NEW-LIVE-1-12H, OUTLOOK-NEW-LIVE-1-12H) can be used"
-          }
+          message: "No emails found. Please verify your credentials and try again.",
+          error_type: "no_results"
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -214,13 +254,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         results: results,
-        message: `Processed ${results.length} emails successfully`,
-        warnings: errors.length > 0 ? errors : undefined,
-        info: {
-          transaction_ids_processed: transaction_ids ? transaction_ids.length : 0,
-          email_strings_processed: email_strings ? email_strings.length : 0,
-          compatible_products: "Only transactions from inbox-compatible products (HOTMAIL-NEW-LIVE-1-12H, OUTLOOK-NEW-LIVE-1-12H) can be used"
-        }
+        message: `Processed ${results.length} emails successfully`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -230,8 +264,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        message: "Internal server error",
-        error: error.message 
+        message: `Server response error: ${error.message}`,
+        error_type: "server_error"
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -241,7 +275,7 @@ serve(async (req) => {
 async function processEmailCredentials(credentials: string, supabase: any): Promise<{success: boolean, results: EmailResult[], error?: string}> {
   const parts = credentials.split('|');
   if (parts.length < 4) {
-    return { success: false, results: [], error: 'Invalid credentials format' };
+    return { success: false, results: [], error: 'Invalid email credentials format. Expected format: email|password|refresh_token|client_id' };
   }
 
   const [email, password, refreshToken, clientId] = parts;
@@ -270,13 +304,21 @@ async function processEmailCredentials(credentials: string, supabase: any): Prom
       // Try to parse error response
       try {
         const errorData = JSON.parse(errorText);
-        return { 
-          success: false, 
-          results: [], 
-          error: `Authentication failed: ${errorData.error_description || errorData.error || 'Invalid credentials'}` 
-        };
+        if (errorData.error === 'invalid_grant') {
+          return { 
+            success: false, 
+            results: [], 
+            error: 'Authentication failed: Invalid or expired email credentials. Please verify the email string format and credentials are correct.' 
+          };
+        } else {
+          return { 
+            success: false, 
+            results: [], 
+            error: `Authentication failed: ${errorData.error_description || errorData.error || 'Invalid credentials'}` 
+          };
+        }
       } catch {
-        return { success: false, results: [], error: 'Authentication failed: Invalid response from Microsoft' };
+        return { success: false, results: [], error: 'Authentication failed: Invalid response from Microsoft authentication server' };
       }
     }
 
@@ -297,7 +339,7 @@ async function processEmailCredentials(credentials: string, supabase: any): Prom
     if (!inboxResponse.ok) {
       const errorText = await inboxResponse.text();
       console.error('Failed to get emails:', errorText);
-      return { success: false, results: [], error: `Failed to fetch emails: ${errorText}` };
+      return { success: false, results: [], error: `Failed to fetch emails: Microsoft API error - ${errorText}` };
     }
 
     const emailsData = await inboxResponse.json();
@@ -331,7 +373,7 @@ async function processEmailCredentials(credentials: string, supabase: any): Prom
     return { success: true, results };
   } catch (error) {
     console.error('Error processing email credentials:', error);
-    return { success: false, results: [], error: error.message };
+    return { success: false, results: [], error: `Server error processing email credentials: ${error.message}` };
   }
 }
 
