@@ -47,6 +47,21 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
   onSubmit,
   onCopy
 }) => {
+  // Handle mutually exclusive checkbox selection
+  const handleUseTransactionIds = (checked: boolean) => {
+    setUseTransactionIds(checked);
+    if (checked) {
+      setUseEmailStrings(false);
+    }
+  };
+
+  const handleUseEmailStrings = (checked: boolean) => {
+    setUseEmailStrings(checked);
+    if (checked) {
+      setUseTransactionIds(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -79,9 +94,9 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
             setToken={setToken}
             loading={loading}
             useTransactionIds={useTransactionIds}
-            setUseTransactionIds={setUseTransactionIds}
+            setUseTransactionIds={handleUseTransactionIds}
             useEmailStrings={useEmailStrings}
-            setUseEmailStrings={setUseEmailStrings}
+            setUseEmailStrings={handleUseEmailStrings}
             onSubmit={onSubmit}
           />
         </CardContent>

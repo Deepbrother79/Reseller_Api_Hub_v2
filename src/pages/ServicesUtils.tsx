@@ -116,7 +116,12 @@ const ServicesUtils = () => {
 
       if (error) {
         console.error('Supabase function error:', error);
-        throw error;
+        toast({
+          title: "Error",
+          description: `Server returned error: ${error.message}`,
+          variant: "destructive"
+        });
+        return;
       }
 
       console.log('Response received:', data);
@@ -126,8 +131,15 @@ const ServicesUtils = () => {
         setResults(data.results || []);
         
         if (resultsCount === 0) {
-          // Check if there were processing errors
-          if (useTransactionIds) {
+          // Check if there were processing errors or warnings
+          if (data.warnings && data.warnings.length > 0) {
+            const warningMessage = data.warnings.join('; ');
+            toast({
+              title: "Warning",
+              description: warningMessage,
+              variant: "destructive"
+            });
+          } else if (useTransactionIds) {
             toast({
               title: "Warning",
               description: "No emails found. Please verify that the transaction IDs are correct and from compatible products (HOTMAIL-NEW-LIVE-1-12H, OUTLOOK-NEW-LIVE-1-12H)",
@@ -148,9 +160,16 @@ const ServicesUtils = () => {
         }
       } else {
         // Server returned an error
+        let errorMessage = data.message || "Failed to process request";
+        
+        // Include detailed errors if available
+        if (data.errors && data.errors.length > 0) {
+          errorMessage = data.errors.join('; ');
+        }
+        
         toast({
           title: "Error",
-          description: data.message || "Failed to process request",
+          description: errorMessage,
           variant: "destructive"
         });
       }
