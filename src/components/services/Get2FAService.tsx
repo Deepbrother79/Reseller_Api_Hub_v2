@@ -17,6 +17,16 @@ const Get2FAService: React.FC<Get2FAServiceProps> = ({ onCopy }) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const simpleHmac = (key: Uint8Array, data: Uint8Array): Uint8Array => {
+    // Simplified HMAC implementation for demonstration
+    // In production, use WebCrypto API or proper crypto library
+    const result = new Uint8Array(20);
+    for (let i = 0; i < result.length; i++) {
+      result[i] = (key[i % key.length] ^ data[i % data.length]) & 0xff;
+    }
+    return result;
+  };
+
   const generateTOTP = (secret: string, timeStep: number = 30, digits: number = 6): string => {
     try {
       // Base32 decode
@@ -36,7 +46,7 @@ const Get2FAService: React.FC<Get2FAServiceProps> = ({ onCopy }) => {
       
       // Get current time step
       const epoch = Math.floor(Date.now() / 1000);
-      const counter = Math.floor(epoch / timeStep);
+      let counter = Math.floor(epoch / timeStep);
       
       // Convert counter to 8-byte array
       const counterBytes = new Array(8);
@@ -47,7 +57,11 @@ const Get2FAService: React.FC<Get2FAServiceProps> = ({ onCopy }) => {
       
       // HMAC-SHA1 simulation (simplified for demonstration)
       // In production, you'd use a proper crypto library
-      const hmac = this.simpleHmac(new Uint8Array(bytes), new Uint8Array(counterBytes));
+      const hmac = simpleHmac(new Uint8Array(bytes), new Uint8Array(counterBytes));
+      
+      if (!hmac || hmac.length === 0) {
+        throw new Error('HMAC generation failed');
+      }
       
       // Dynamic truncation
       const offset = hmac[hmac.length - 1] & 0x0f;
@@ -60,16 +74,6 @@ const Get2FAService: React.FC<Get2FAServiceProps> = ({ onCopy }) => {
     } catch (error) {
       throw new Error('Invalid authenticator string format');
     }
-  };
-
-  const simpleHmac = (key: Uint8Array, data: Uint8Array): Uint8Array => {
-    // Simplified HMAC implementation for demonstration
-    // In production, use WebCrypto API or proper crypto library
-    const result = new Uint8Array(20);
-    for (let i = 0; i < result.length; i++) {
-      result[i] = (key[i % key.length] ^ data[i % data.length]) & 0xff;
-    }
-    return result;
   };
 
   const handleGenerate = async () => {
