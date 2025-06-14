@@ -74,7 +74,13 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
         </CardContent>
       </Card>
 
-      <ApiEndpointsCard onCopy={onCopy} />
+      <ApiEndpointsCard 
+        baseUrl={`${window.location.protocol}//${window.location.host}`}
+        transactionIds={transactionIds}
+        emailStrings={emailStrings}
+        token={token}
+        onCopy={onCopy}
+      />
 
       {results.length > 0 && (
         <EmailResultsTable results={results} onCopy={onCopy} />
