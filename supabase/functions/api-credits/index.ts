@@ -54,6 +54,8 @@ serve(async (req) => {
       );
     }
 
+    console.log('Credits found for token:', tokenData.credits);
+
     return new Response(
       JSON.stringify({ 
         success: true, 
