@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,30 @@ const RequestForm: React.FC<RequestFormProps> = ({
   baseUrl
 }) => {
   const selectedProductData = products.find(p => p.id === selectedProduct);
+
+  // Extract output_result from apiResult
+  const getOutputResult = () => {
+    if (!apiResult) return '';
+    
+    // If api_response exists, try to get it from there
+    if (apiResult.api_response) {
+      if (Array.isArray(apiResult.api_response)) {
+        return apiResult.api_response.join('\n');
+      }
+      return typeof apiResult.api_response === 'string' 
+        ? apiResult.api_response 
+        : JSON.stringify(apiResult.api_response, null, 2);
+    }
+    
+    // Fallback to checking if apiResult itself is the output
+    if (Array.isArray(apiResult)) {
+      return apiResult.join('\n');
+    }
+    
+    return '';
+  };
+
+  const outputResult = getOutputResult();
 
   return (
     <Card>
@@ -127,6 +152,32 @@ const RequestForm: React.FC<RequestFormProps> = ({
             {loading ? "Processing..." : "Submit Request"}
           </Button>
         </form>
+
+        {/* Show Output Result - New copyable textbox */}
+        {apiResult && outputResult && (
+          <div className="mt-6">
+            <Separator className="mb-4" />
+            <h3 className="font-semibold mb-3">Output Result:</h3>
+            <div className="bg-gray-100 p-3 rounded-lg">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium text-purple-600">Result Content</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCopyUrl(outputResult)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <textarea
+                className="w-full h-32 text-xs bg-white p-2 rounded border resize-none font-mono"
+                value={outputResult}
+                readOnly
+                placeholder="Output result will appear here..."
+              />
+            </div>
+          </div>
+        )}
 
         {/* Show API result */}
         {apiResult && (
