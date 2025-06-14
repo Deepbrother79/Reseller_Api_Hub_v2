@@ -7,7 +7,7 @@ import TransactionList from '@/components/TransactionList';
 import RefundForm from '@/components/RefundForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import Button from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 interface Product {
   id: string;
