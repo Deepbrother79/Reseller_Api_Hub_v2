@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -27,7 +28,7 @@ serve(async (req) => {
     // Get all products with their basic info
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, fornitore_url, payload_template, http_method, product_type, quantity');
+      .select('id, name, fornitore_url, payload_template, http_method, product_type, quantity, short_description');
 
     if (error) {
       throw error;
