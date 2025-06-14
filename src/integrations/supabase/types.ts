@@ -78,6 +78,7 @@ export type Database = {
           header_http: Json | null
           http_method: string | null
           id: string
+          inbox_compatible: boolean | null
           name: string
           path_body: string | null
           payload_template: Json | null
@@ -92,6 +93,7 @@ export type Database = {
           header_http?: Json | null
           http_method?: string | null
           id?: string
+          inbox_compatible?: boolean | null
           name: string
           path_body?: string | null
           payload_template?: Json | null
@@ -106,6 +108,7 @@ export type Database = {
           header_http?: Json | null
           http_method?: string | null
           id?: string
+          inbox_compatible?: boolean | null
           name?: string
           path_body?: string | null
           payload_template?: Json | null

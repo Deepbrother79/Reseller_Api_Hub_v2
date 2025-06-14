@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -29,7 +28,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const results: EmailResult[] = [];
-    const allowedProducts = ['HOTMAIL-NEW-LIVE-1-12H', 'OUTLOOK-NEW-LIVE-1-12H'];
     const EMAIL_STRINGS_PRODUCT_NAME = 'EMAIL-INBOX-READER'; // Prodotto digitale specifico per email strings
 
     // Process transaction IDs
@@ -38,12 +36,12 @@ serve(async (req) => {
       
       for (const transactionId of limitedTransactionIds) {
         try {
-          // Get transaction
+          // Get transaction with product compatibility check
           const { data: transaction, error: transactionError } = await supabase
             .from('transactions')
             .select(`
               *,
-              products (name, product_type)
+              products (name, product_type, inbox_compatible)
             `)
             .eq('id', transactionId.trim())
             .single();
@@ -53,9 +51,9 @@ serve(async (req) => {
             continue;
           }
 
-          // Check if product is allowed
-          if (!allowedProducts.includes(transaction.products.name)) {
-            console.log(`Product not allowed: ${transaction.products.name}`);
+          // Check if product is compatible with inbox reading
+          if (!transaction.products.inbox_compatible) {
+            console.log(`Product not compatible with inbox reading: ${transaction.products.name}`);
             continue;
           }
 
@@ -82,13 +80,13 @@ serve(async (req) => {
       }
     }
 
-    // Process email strings - ora richiede un token specifico per un prodotto digitale
+    // Process email strings - richiede un token specifico per il prodotto EMAIL-INBOX-READER
     if (email_strings && email_strings.length > 0) {
       if (!token) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: "Token required for email string processing" 
+            message: "Token required for email string processing. You need a token for the EMAIL-INBOX-READER product." 
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -124,7 +122,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: `Invalid token or token not authorized for ${EMAIL_STRINGS_PRODUCT_NAME} product` 
+            message: `Invalid token or token not authorized for ${EMAIL_STRINGS_PRODUCT_NAME} product. Please create a token for the EMAIL-INBOX-READER product.` 
           }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -190,7 +188,12 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         results: results,
-        message: `Processed ${results.length} emails successfully`
+        message: `Processed ${results.length} emails successfully`,
+        info: {
+          transaction_ids_processed: transaction_ids ? transaction_ids.length : 0,
+          email_strings_processed: email_strings ? email_strings.length : 0,
+          compatible_products: "Only transactions from inbox-compatible products (HOTMAIL-NEW-LIVE-1-12H, OUTLOOK-NEW-LIVE-1-12H) can be used"
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

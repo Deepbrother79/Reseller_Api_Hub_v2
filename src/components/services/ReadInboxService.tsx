@@ -1,8 +1,10 @@
 
 import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ReadInboxForm from './ReadInboxForm';
-import ApiEndpointsCard from './ApiEndpointsCard';
 import EmailResultsTable from './EmailResultsTable';
+import ApiEndpointsCard from './ApiEndpointsCard';
+import { Mail } from "lucide-react";
 
 interface EmailResult {
   mail: string;
@@ -37,30 +39,46 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
   onSubmit,
   onCopy
 }) => {
-  const baseUrl = 'https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1';
-
   return (
     <div className="space-y-6">
-      <ReadInboxForm
-        transactionIds={transactionIds}
-        setTransactionIds={setTransactionIds}
-        emailStrings={emailStrings}
-        setEmailStrings={setEmailStrings}
-        token={token}
-        setToken={setToken}
-        loading={loading}
-        onSubmit={onSubmit}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Read Inbox Mail
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h4 className="font-semibold text-blue-800 mb-2">Important Information:</h4>
+            <div className="text-sm text-blue-700 space-y-1">
+              <p><strong>Transaction IDs:</strong> Only transactions from inbox-compatible products can be used:</p>
+              <ul className="list-disc list-inside ml-4 space-y-1">
+                <li>HOTMAIL-NEW-LIVE-1-12H</li>
+                <li>OUTLOOK-NEW-LIVE-1-12H</li>
+              </ul>
+              <p><strong>Email Strings:</strong> Requires a token for the EMAIL-INBOX-READER product.</p>
+            </div>
+          </div>
+          
+          <ReadInboxForm
+            transactionIds={transactionIds}
+            setTransactionIds={setTransactionIds}
+            emailStrings={emailStrings}
+            setEmailStrings={setEmailStrings}
+            token={token}
+            setToken={setToken}
+            loading={loading}
+            onSubmit={onSubmit}
+          />
+        </CardContent>
+      </Card>
 
-      <ApiEndpointsCard
-        baseUrl={baseUrl}
-        transactionIds={transactionIds}
-        emailStrings={emailStrings}
-        token={token}
-        onCopy={onCopy}
-      />
+      <ApiEndpointsCard onCopy={onCopy} />
 
-      <EmailResultsTable results={results} onCopy={onCopy} />
+      {results.length > 0 && (
+        <EmailResultsTable results={results} onCopy={onCopy} />
+      )}
     </div>
   );
 };
