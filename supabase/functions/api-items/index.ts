@@ -28,7 +28,7 @@ serve(async (req) => {
     // Get all products with their basic info
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, fornitore_url, payload_template, http_method, product_type, quantity, short_description');
+      .select('id, name, short_description, fornitore_url, payload_template, http_method, product_type, quantity');
 
     if (error) {
       throw error;
