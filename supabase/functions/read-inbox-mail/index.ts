@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -28,7 +29,8 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const results: EmailResult[] = [];
-    const EMAIL_STRINGS_PRODUCT_NAME = 'EMAIL-INBOX-READER'; // Prodotto digitale specifico per email strings
+    const errors: string[] = [];
+    const EMAIL_STRINGS_PRODUCT_NAME = 'EMAIL-INBOX-READER';
 
     // Process transaction IDs
     if (transaction_ids && transaction_ids.length > 0) {
@@ -47,12 +49,14 @@ serve(async (req) => {
             .single();
 
           if (transactionError || !transaction) {
+            errors.push(`Transaction ID not found: ${transactionId}`);
             console.log(`Transaction not found: ${transactionId}`);
             continue;
           }
 
           // Check if product is compatible with inbox reading
           if (!transaction.products.inbox_compatible) {
+            errors.push(`Product not compatible with inbox reading: ${transaction.products.name} (Transaction: ${transactionId})`);
             console.log(`Product not compatible with inbox reading: ${transaction.products.name}`);
             continue;
           }
@@ -66,21 +70,25 @@ serve(async (req) => {
           } else if (typeof outputResult === 'string') {
             emailCredentials = outputResult;
           } else {
+            errors.push(`Invalid output_result format for transaction: ${transactionId}`);
             console.log('Invalid output_result format');
             continue;
           }
 
           const emailData = await processEmailCredentials(emailCredentials, supabase);
-          if (emailData.length > 0) {
-            results.push(...emailData);
+          if (emailData.success) {
+            results.push(...emailData.results);
+          } else {
+            errors.push(`Failed to process transaction ${transactionId}: ${emailData.error}`);
           }
         } catch (error) {
+          errors.push(`Error processing transaction ${transactionId}: ${error.message}`);
           console.error(`Error processing transaction ${transactionId}:`, error);
         }
       }
     }
 
-    // Process email strings - richiede un token specifico per il prodotto EMAIL-INBOX-READER
+    // Process email strings
     if (email_strings && email_strings.length > 0) {
       if (!token) {
         return new Response(
@@ -92,7 +100,7 @@ serve(async (req) => {
         );
       }
 
-      // Verifica che il token sia valido per il prodotto EMAIL-INBOX-READER
+      // Verify token for EMAIL-INBOX-READER product
       const { data: product, error: productError } = await supabase
         .from('products')
         .select('id')
@@ -110,7 +118,6 @@ serve(async (req) => {
         );
       }
 
-      // Verifica il token e i crediti per il prodotto specifico
       const { data: tokenData, error: tokenError } = await supabase
         .from('tokens')
         .select('*')
@@ -145,16 +152,19 @@ serve(async (req) => {
       for (const emailString of limitedEmailStrings) {
         try {
           const emailData = await processEmailCredentials(emailString, supabase);
-          if (emailData.length > 0) {
-            results.push(...emailData);
+          if (emailData.success) {
+            results.push(...emailData.results);
             processedCount++;
+          } else {
+            errors.push(`Failed to process email credentials: ${emailData.error}`);
           }
         } catch (error) {
+          errors.push(`Error processing email string: ${error.message}`);
           console.error(`Error processing email string:`, error);
         }
       }
 
-      // Decrementa i crediti solo per le email effettivamente processate
+      // Update credits only for successfully processed emails
       if (processedCount > 0) {
         const { error: updateError } = await supabase
           .from('tokens')
@@ -165,7 +175,6 @@ serve(async (req) => {
           console.error('Failed to update credits:', updateError);
         }
 
-        // Crea una transazione per tracciare l'uso del servizio
         const { error: transactionError } = await supabase
           .from('transactions')
           .insert({
@@ -184,11 +193,29 @@ serve(async (req) => {
       }
     }
 
+    // Return response with detailed error information
+    if (results.length === 0 && errors.length > 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: "No emails could be processed",
+          errors: errors,
+          info: {
+            transaction_ids_processed: transaction_ids ? transaction_ids.length : 0,
+            email_strings_processed: email_strings ? email_strings.length : 0,
+            compatible_products: "Only transactions from inbox-compatible products (HOTMAIL-NEW-LIVE-1-12H, OUTLOOK-NEW-LIVE-1-12H) can be used"
+          }
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         results: results,
         message: `Processed ${results.length} emails successfully`,
+        warnings: errors.length > 0 ? errors : undefined,
         info: {
           transaction_ids_processed: transaction_ids ? transaction_ids.length : 0,
           email_strings_processed: email_strings ? email_strings.length : 0,
@@ -203,18 +230,18 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        message: "Internal server error" 
+        message: "Internal server error",
+        error: error.message 
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
-async function processEmailCredentials(credentials: string, supabase: any): Promise<EmailResult[]> {
+async function processEmailCredentials(credentials: string, supabase: any): Promise<{success: boolean, results: EmailResult[], error?: string}> {
   const parts = credentials.split('|');
   if (parts.length < 4) {
-    console.log('Invalid credentials format');
-    return [];
+    return { success: false, results: [], error: 'Invalid credentials format' };
   }
 
   const [email, password, refreshToken, clientId] = parts;
@@ -237,8 +264,20 @@ async function processEmailCredentials(credentials: string, supabase: any): Prom
     });
 
     if (!tokenResponse.ok) {
-      console.error('Failed to get access token:', await tokenResponse.text());
-      return [];
+      const errorText = await tokenResponse.text();
+      console.error('Failed to get access token:', errorText);
+      
+      // Try to parse error response
+      try {
+        const errorData = JSON.parse(errorText);
+        return { 
+          success: false, 
+          results: [], 
+          error: `Authentication failed: ${errorData.error_description || errorData.error || 'Invalid credentials'}` 
+        };
+      } catch {
+        return { success: false, results: [], error: 'Authentication failed: Invalid response from Microsoft' };
+      }
     }
 
     const tokenResult = await tokenResponse.json();
@@ -256,8 +295,9 @@ async function processEmailCredentials(credentials: string, supabase: any): Prom
     );
 
     if (!inboxResponse.ok) {
-      console.error('Failed to get emails:', await inboxResponse.text());
-      return [];
+      const errorText = await inboxResponse.text();
+      console.error('Failed to get emails:', errorText);
+      return { success: false, results: [], error: `Failed to fetch emails: ${errorText}` };
     }
 
     const emailsData = await inboxResponse.json();
@@ -288,10 +328,10 @@ async function processEmailCredentials(credentials: string, supabase: any): Prom
       });
     }
 
-    return results;
+    return { success: true, results };
   } catch (error) {
     console.error('Error processing email credentials:', error);
-    return [];
+    return { success: false, results: [], error: error.message };
   }
 }
 

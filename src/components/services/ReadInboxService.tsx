@@ -23,6 +23,10 @@ interface ReadInboxServiceProps {
   setToken: (value: string) => void;
   loading: boolean;
   results: EmailResult[];
+  useTransactionIds: boolean;
+  setUseTransactionIds: (value: boolean) => void;
+  useEmailStrings: boolean;
+  setUseEmailStrings: (value: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCopy: (text: string) => void;
 }
@@ -36,6 +40,10 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
   setToken,
   loading,
   results,
+  useTransactionIds,
+  setUseTransactionIds,
+  useEmailStrings,
+  setUseEmailStrings,
   onSubmit,
   onCopy
 }) => {
@@ -58,6 +66,7 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
                 <li>OUTLOOK-NEW-LIVE-1-12H</li>
               </ul>
               <p><strong>Email Strings:</strong> Requires a token for the EMAIL-INBOX-READER product.</p>
+              <p><strong>Usage:</strong> Select which input type to use with the checkboxes above each field.</p>
             </div>
           </div>
           
@@ -69,6 +78,10 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
             token={token}
             setToken={setToken}
             loading={loading}
+            useTransactionIds={useTransactionIds}
+            setUseTransactionIds={setUseTransactionIds}
+            useEmailStrings={useEmailStrings}
+            setUseEmailStrings={setUseEmailStrings}
             onSubmit={onSubmit}
           />
         </CardContent>

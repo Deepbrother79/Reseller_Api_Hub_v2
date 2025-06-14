@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ const ServicesUtils = () => {
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<EmailResult[]>([]);
+  const [useTransactionIds, setUseTransactionIds] = useState(true);
+  const [useEmailStrings, setUseEmailStrings] = useState(false);
   const { toast } = useToast();
 
   const services = [
@@ -43,10 +46,49 @@ const ServicesUtils = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!transactionIds.trim() && !emailStrings.trim()) {
+    
+    // Validate input selection
+    if (!useTransactionIds && !useEmailStrings) {
       toast({
         title: "Error",
-        description: "Please enter either transaction IDs or email strings",
+        description: "Please select at least one input type (Transaction IDs or Email Strings)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (useTransactionIds && useEmailStrings) {
+      toast({
+        title: "Error",
+        description: "Please select only one input type at a time",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate content based on selection
+    if (useTransactionIds && !transactionIds.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter transaction IDs",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (useEmailStrings && !emailStrings.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter email strings",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (useEmailStrings && !token.trim()) {
+      toast({
+        title: "Error",
+        description: "Authorization token is required for email strings",
         variant: "destructive"
       });
       return;
@@ -56,34 +98,83 @@ const ServicesUtils = () => {
     setResults([]);
 
     try {
+      const requestData = {
+        transaction_ids: useTransactionIds && transactionIds.trim() 
+          ? transactionIds.split('\n').filter(id => id.trim()) 
+          : [],
+        email_strings: useEmailStrings && emailStrings.trim() 
+          ? emailStrings.split('\n').filter(str => str.trim()) 
+          : [],
+        token: useEmailStrings && token.trim() ? token.trim() : null
+      };
+
+      console.log('Sending request:', requestData);
+
       const { data, error } = await supabase.functions.invoke('read-inbox-mail', {
-        body: {
-          transaction_ids: transactionIds.trim() ? transactionIds.split('\n').filter(id => id.trim()) : [],
-          email_strings: emailStrings.trim() ? emailStrings.split('\n').filter(str => str.trim()) : [],
-          token: token.trim() || null
-        }
+        body: requestData
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      console.log('Response received:', data);
 
       if (data.success) {
+        const resultsCount = data.results?.length || 0;
         setResults(data.results || []);
-        toast({
-          title: "Success",
-          description: `Processed ${data.results?.length || 0} emails successfully`,
-        });
+        
+        if (resultsCount === 0) {
+          // Check if there were processing errors
+          if (useTransactionIds) {
+            toast({
+              title: "Warning",
+              description: "No emails found. Please verify that the transaction IDs are correct and from compatible products (HOTMAIL-NEW-LIVE-1-12H, OUTLOOK-NEW-LIVE-1-12H)",
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "Warning", 
+              description: "No emails found. Please verify that the email credentials are correct and valid",
+              variant: "destructive"
+            });
+          }
+        } else {
+          toast({
+            title: "Success",
+            description: `Processed ${resultsCount} emails successfully`,
+          });
+        }
       } else {
+        // Server returned an error
         toast({
           title: "Error",
           description: data.message || "Failed to process request",
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing inbox:', error);
+      
+      // Try to parse error message if it's a JSON response
+      let errorMessage = "Failed to process inbox mail";
+      if (error.message) {
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.error_description) {
+            errorMessage = `Authentication error: ${errorData.error_description}`;
+          } else if (errorData.error) {
+            errorMessage = `Error: ${errorData.error}`;
+          }
+        } catch {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to process inbox mail",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -127,6 +218,10 @@ const ServicesUtils = () => {
             setToken={setToken}
             loading={loading}
             results={results}
+            useTransactionIds={useTransactionIds}
+            setUseTransactionIds={setUseTransactionIds}
+            useEmailStrings={useEmailStrings}
+            setUseEmailStrings={setUseEmailStrings}
             onSubmit={handleSubmit}
             onCopy={copyToClipboard}
           />
