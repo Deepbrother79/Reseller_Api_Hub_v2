@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Copy, Mail, Clock, FileText, Hash } from "lucide-react";
+import { Copy, Mail, Clock, FileText, Hash, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 interface EmailResult {
   mail: string;
@@ -96,9 +96,17 @@ const ServicesUtils = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Services & Utils</h1>
-          <p className="text-gray-600">Advanced tools and utilities for email management and automation</p>
+        <div className="mb-8 flex items-center gap-4">
+          <Link to="/">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Home
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Services & Utils</h1>
+            <p className="text-gray-600">Advanced tools and utilities for email management and automation</p>
+          </div>
         </div>
 
         {/* Service Navigation */}
