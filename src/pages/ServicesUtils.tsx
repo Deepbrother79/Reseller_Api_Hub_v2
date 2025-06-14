@@ -116,10 +116,13 @@ const ServicesUtils = () => {
       if (error) {
         console.error('Supabase function error:', error);
         
-        // Try to parse the error message for specific errors
-        let errorMessage = "Server returned error";
+        // Try to get the actual error response from the server
+        let errorMessage = "Server response error";
+        
         try {
+          // First check if the error has a message that might contain JSON
           if (error.message) {
+            // Try to parse the error message as JSON
             const errorData = JSON.parse(error.message);
             if (errorData.message) {
               errorMessage = errorData.message;
@@ -129,8 +132,45 @@ const ServicesUtils = () => {
               errorMessage = `Error: ${errorData.error}`;
             }
           }
-        } catch {
-          errorMessage = error.message || "Unknown server error";
+        } catch (parseError) {
+          // If JSON parsing fails, check if we can extract error details from the response
+          if (error.details) {
+            errorMessage = error.details;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+        }
+
+        // Make a direct fetch call to get the actual error response
+        try {
+          const response = await fetch(
+            `https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1/read-inbox-mail`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabase.supabaseKey}`,
+                'apikey': supabase.supabaseKey
+              },
+              body: JSON.stringify(requestData)
+            }
+          );
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            try {
+              const errorData = JSON.parse(errorText);
+              if (errorData.message) {
+                errorMessage = errorData.message;
+              } else if (errorData.error) {
+                errorMessage = errorData.error;
+              }
+            } catch {
+              errorMessage = errorText || "Server response error";
+            }
+          }
+        } catch (fetchError) {
+          console.error('Fetch error:', fetchError);
         }
         
         toast({
@@ -153,41 +193,12 @@ const ServicesUtils = () => {
         });
       } else {
         // Server returned an error response
-        let errorMessage = "Failed to process request";
+        let errorMessage = "Server response error";
         
         if (data && data.message) {
           errorMessage = data.message;
         } else if (data && data.error) {
           errorMessage = data.error;
-        }
-        
-        // Handle specific error types with custom messages
-        if (data && data.error_type) {
-          switch (data.error_type) {
-            case "invalid_transaction_id":
-              errorMessage = `Invalid Transaction ID: ${errorMessage}`;
-              break;
-            case "invalid_token":
-              errorMessage = `Invalid Token: ${errorMessage}`;
-              break;
-            case "missing_token":
-              errorMessage = `Missing Token: ${errorMessage}`;
-              break;
-            case "incompatible_product":
-              errorMessage = `Product Error: ${errorMessage}`;
-              break;
-            case "server_error":
-              errorMessage = `Server Response Error: ${errorMessage}`;
-              break;
-            case "email_credentials_error":
-              errorMessage = `Email Credentials Error: ${errorMessage}`;
-              break;
-            case "no_results":
-              errorMessage = `No Results: ${errorMessage}`;
-              break;
-            default:
-              errorMessage = `Error: ${errorMessage}`;
-          }
         }
         
         toast({
@@ -199,19 +210,21 @@ const ServicesUtils = () => {
     } catch (error: any) {
       console.error('Error processing inbox:', error);
       
-      let errorMessage = "Server Response Error: Failed to process inbox mail";
+      let errorMessage = "Server response error";
+      
+      // Try to extract meaningful error information
       if (error.message) {
         try {
           const errorData = JSON.parse(error.message);
           if (errorData.error_description) {
-            errorMessage = `Authentication Error: ${errorData.error_description}`;
+            errorMessage = `Authentication error: ${errorData.error_description}`;
           } else if (errorData.error) {
-            errorMessage = `Server Error: ${errorData.error}`;
+            errorMessage = `Server error: ${errorData.error}`;
           } else if (errorData.message) {
-            errorMessage = `Server Response Error: ${errorData.message}`;
+            errorMessage = errorData.message;
           }
         } catch {
-          errorMessage = `Server Response Error: ${error.message}`;
+          errorMessage = error.message;
         }
       }
       
