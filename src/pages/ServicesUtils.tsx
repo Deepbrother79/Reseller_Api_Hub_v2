@@ -116,13 +116,10 @@ const ServicesUtils = () => {
       if (error) {
         console.error('Supabase function error:', error);
         
-        // Try to get the actual error response from the server
         let errorMessage = "Server response error";
         
         try {
-          // First check if the error has a message that might contain JSON
           if (error.message) {
-            // Try to parse the error message as JSON
             const errorData = JSON.parse(error.message);
             if (errorData.message) {
               errorMessage = errorData.message;
@@ -133,44 +130,11 @@ const ServicesUtils = () => {
             }
           }
         } catch (parseError) {
-          // If JSON parsing fails, check if we can extract error details from the response
           if (error.details) {
             errorMessage = error.details;
           } else if (error.message) {
             errorMessage = error.message;
           }
-        }
-
-        // Make a direct fetch call to get the actual error response
-        try {
-          const response = await fetch(
-            `https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1/read-inbox-mail`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabase.supabaseKey}`,
-                'apikey': supabase.supabaseKey
-              },
-              body: JSON.stringify(requestData)
-            }
-          );
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            try {
-              const errorData = JSON.parse(errorText);
-              if (errorData.message) {
-                errorMessage = errorData.message;
-              } else if (errorData.error) {
-                errorMessage = errorData.error;
-              }
-            } catch {
-              errorMessage = errorText || "Server response error";
-            }
-          }
-        } catch (fetchError) {
-          console.error('Fetch error:', fetchError);
         }
         
         toast({
@@ -188,11 +152,11 @@ const ServicesUtils = () => {
         setResults(data.results || []);
         
         toast({
-          title: "Success",
-          description: `Processed ${resultsCount} emails successfully`,
+          title: "Success!",
+          description: `Successfully processed ${resultsCount} emails. Results are now displayed below.`,
+          className: "bg-green-50 border-green-200 text-green-800",
         });
       } else {
-        // Server returned an error response
         let errorMessage = "Server response error";
         
         if (data && data.message) {
@@ -212,7 +176,6 @@ const ServicesUtils = () => {
       
       let errorMessage = "Server response error";
       
-      // Try to extract meaningful error information
       if (error.message) {
         try {
           const errorData = JSON.parse(error.message);
