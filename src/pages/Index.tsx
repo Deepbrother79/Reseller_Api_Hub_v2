@@ -53,6 +53,7 @@ const Index = () => {
   const [historyToken, setHistoryToken] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [credits, setCredits] = useState<number | null>(null);
   
   const { toast } = useToast();
 
@@ -213,6 +214,22 @@ const Index = () => {
     }
   };
 
+  const fetchCreditsForToken = async (tokenValue: string) => {
+    try {
+      const response = await fetch(`${baseUrl}/api-credits?token=${encodeURIComponent(tokenValue)}`);
+      const data = await response.json();
+      
+      if (data.success && data.credits !== undefined) {
+        setCredits(data.credits);
+      } else {
+        setCredits(null);
+      }
+    } catch (error) {
+      console.error('Error fetching credits:', error);
+      setCredits(null);
+    }
+  };
+
   const handleHistorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!historyToken) {
@@ -228,6 +245,9 @@ const Index = () => {
     setTransactions([]);
 
     try {
+      // Fetch credits first
+      await fetchCreditsForToken(historyToken);
+
       const response = await fetch(`${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`);
       const data = await response.json();
 
@@ -253,6 +273,11 @@ const Index = () => {
     } finally {
       setHistoryLoading(false);
     }
+  };
+
+  const handleHistoryTokenChange = (value: string) => {
+    setHistoryToken(value);
+    setCredits(null); // Reset credits when token changes
   };
 
   return (
@@ -294,7 +319,8 @@ const Index = () => {
           <HistoryForm
             historyToken={historyToken}
             historyLoading={historyLoading}
-            onHistoryTokenChange={setHistoryToken}
+            credits={credits}
+            onHistoryTokenChange={handleHistoryTokenChange}
             onHistorySubmit={handleHistorySubmit}
             onCopyUrl={copyToClipboard}
             generateHistoryUrl={generateHistoryUrl}

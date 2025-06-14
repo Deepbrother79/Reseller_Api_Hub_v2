@@ -10,6 +10,7 @@ import { Copy } from "lucide-react";
 interface HistoryFormProps {
   historyToken: string;
   historyLoading: boolean;
+  credits: number | null;
   onHistoryTokenChange: (value: string) => void;
   onHistorySubmit: (e: React.FormEvent) => void;
   onCopyUrl: (url: string) => void;
@@ -19,6 +20,7 @@ interface HistoryFormProps {
 const HistoryForm: React.FC<HistoryFormProps> = ({
   historyToken,
   historyLoading,
+  credits,
   onHistoryTokenChange,
   onHistorySubmit,
   onCopyUrl,
@@ -27,10 +29,15 @@ const HistoryForm: React.FC<HistoryFormProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Transaction History</CardTitle>
+        <CardTitle>Transaction History & Balance</CardTitle>
         <CardDescription>
           View your transaction history by entering your token
         </CardDescription>
+        {credits !== null && historyToken && (
+          <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800 font-medium">Credits: {credits}</p>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={onHistorySubmit} className="space-y-4">
@@ -46,7 +53,7 @@ const HistoryForm: React.FC<HistoryFormProps> = ({
           </div>
 
           <Button type="submit" className="w-full" disabled={historyLoading}>
-            {historyLoading ? "Loading..." : "View History"}
+            {historyLoading ? "Loading..." : "View History & Balance"}
           </Button>
         </form>
 
