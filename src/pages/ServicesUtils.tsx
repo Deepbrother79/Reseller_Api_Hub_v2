@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ const ServicesUtils = () => {
     { id: 'get-2fa', name: 'Get 2FA', disabled: false },
     { id: 'read-inbox', name: 'Read Inbox Mail', disabled: false },
     { id: 'get-oauth2', name: 'Get Oauth2 Token', disabled: false },
-    { id: 'capcut-pro', name: 'Capcut Pro', disabled: false }
+    { id: 'capcut-pro', name: 'CapCut Pro', disabled: false }
   ];
 
   const copyToClipboard = (text: string) => {

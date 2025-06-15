@@ -24,3 +24,6 @@ verify_jwt = false
 
 [functions.update-products-quantity]
 verify_jwt = false
+
+[functions.invite-capcut-pro]
+verify_jwt = false
