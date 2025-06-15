@@ -30,6 +30,20 @@ serve(async (req) => {
       )
     }
 
+    // Validate days: must be a multiple of 7 and between 7 and 70
+    if (days % 7 !== 0 || days < 7 || days > 70) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Invalid number of days. Days must be a multiple of 7 and between 7 and 70 (7, 14, 21, 28, 35, 42, 49, 56, 63, 70)' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     // Validate token and check credits
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
