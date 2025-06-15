@@ -9,6 +9,7 @@ import ServiceNavigation from "@/components/services/ServiceNavigation";
 import ReadInboxService from "@/components/services/ReadInboxService";
 import Get2FAService from "@/components/services/Get2FAService";
 import GetOAuth2Service from "@/components/services/GetOAuth2Service";
+import CapCutProService from "@/components/services/CapCutProService";
 
 interface EmailResult {
   mail: string;
@@ -33,7 +34,7 @@ const ServicesUtils = () => {
     { id: 'get-2fa', name: 'Get 2FA', disabled: false },
     { id: 'read-inbox', name: 'Read Inbox Mail', disabled: false },
     { id: 'get-oauth2', name: 'Get Oauth2 Token', disabled: false },
-    { id: 'capcut-pro', name: 'Capcut Pro', disabled: true }
+    { id: 'capcut-pro', name: 'Capcut Pro', disabled: false }
   ];
 
   const copyToClipboard = (text: string) => {
@@ -251,7 +252,11 @@ const ServicesUtils = () => {
           <GetOAuth2Service onCopy={copyToClipboard} />
         )}
 
-        {activeService !== 'read-inbox' && activeService !== 'get-2fa' && activeService !== 'get-oauth2' && (
+        {activeService === 'capcut-pro' && (
+          <CapCutProService onCopy={copyToClipboard} />
+        )}
+
+        {!['read-inbox', 'get-2fa', 'get-oauth2', 'capcut-pro'].includes(activeService) && (
           <Card>
             <CardContent className="text-center py-12">
               <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
