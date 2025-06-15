@@ -25,22 +25,21 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get all products with their basic info
+    // Get only public product data (id, name, quantity)
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, short_description, fornitore_url, payload_template, http_method, product_type, quantity');
+      .select('id, name, quantity, product_type');
 
     if (error) {
       throw error;
     }
 
-    // For products where quantity is null or we want fresh data, 
-    // calculate the quantity based on product type
+    // Calculate quantity for digital products if needed
     const updatedProducts = await Promise.all(
       (products || []).map(async (product) => {
         let actualQuantity = product.quantity;
 
-        // If quantity is null or 0, try to get fresh count
+        // If quantity is null or 0, try to get fresh count for digital products
         if (actualQuantity === null || actualQuantity === 0) {
           if (product.product_type === 'digital') {
             // Count available digital products
@@ -54,12 +53,12 @@ serve(async (req) => {
               actualQuantity = count || 0;
             }
           }
-          // For API products, we keep the existing quantity from the database
-          // as it should be updated by the update-products-quantity function
         }
 
+        // Return only public fields
         return {
-          ...product,
+          id: product.id,
+          name: product.name,
           quantity: actualQuantity
         };
       })

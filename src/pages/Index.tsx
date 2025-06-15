@@ -63,7 +63,7 @@ const Index = () => {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const productsUrl = `${baseUrl}/api-items`;
+        const productsUrl = `${baseUrl}/api-products-internal-gt45dsqt1plqkwsxcz`;
         console.log('Loading products from:', productsUrl);
         
         const response = await fetch(productsUrl);
@@ -86,7 +86,7 @@ const Index = () => {
 
     const loadFullProducts = async () => {
       try {
-        const productsUrl = `${baseUrl}/api-products-internal-gt45dsqt1plqkwsxcz`;
+        const productsUrl = `${baseUrl}/api-items`;
         console.log('Loading full products from:', productsUrl);
         
         const response = await fetch(productsUrl);
