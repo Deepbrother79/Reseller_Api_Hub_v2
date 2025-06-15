@@ -25,7 +25,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get all products with their complete info (internal use) including new category fields
+    // Get all products with their complete info (internal use) including category and subcategory fields
     const { data: products, error } = await supabase
       .from('products')
       .select('id, name, short_description, fornitore_url, payload_template, http_method, product_type, quantity, category, subcategory');
