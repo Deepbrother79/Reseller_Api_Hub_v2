@@ -31,13 +31,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const OAUTH2_PRODUCT_NAME = 'GET-OAUTH2-TOKEN';
-
-    // Verify token for GET-OAUTH2-TOKEN product
+    // Get GET-OAUTH2-TOKEN product from database
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('id')
-      .eq('name', OAUTH2_PRODUCT_NAME)
+      .eq('name', 'GET-OAUTH2-TOKEN')
       .eq('product_type', 'digital')
       .single();
 
@@ -45,7 +43,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: `Product ${OAUTH2_PRODUCT_NAME} not found or not configured as digital product`,
+          message: `Product GET-OAUTH2-TOKEN not found or not configured as digital product`,
           error_type: "product_not_found"
         }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -63,7 +61,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: `Invalid Token: Token not found or not authorized for ${OAUTH2_PRODUCT_NAME} product. Please verify your token is correct and valid.`,
+          message: `Invalid Token: Token not found or not authorized for GET-OAUTH2-TOKEN product. Please verify your token is correct and valid.`,
           error_type: "invalid_token"
         }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -74,7 +72,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: `Insufficient credits for ${OAUTH2_PRODUCT_NAME}. Available: ${tokenData.credits}, Required: 1`,
+          message: `Insufficient credits for GET-OAUTH2-TOKEN. Available: ${tokenData.credits}, Required: 1`,
           error_type: "insufficient_credits"
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -144,7 +142,7 @@ serve(async (req) => {
         .insert({
           token: token,
           product_id: product.id,
-          product_name: OAUTH2_PRODUCT_NAME,
+          product_name: 'GET-OAUTH2-TOKEN',
           qty: 1,
           status: 'success',
           response_data: oauthData,
