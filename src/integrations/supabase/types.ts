@@ -73,6 +73,7 @@ export type Database = {
       }
       products: {
         Row: {
+          category: string | null
           condition_reply_output: string | null
           fornitore_url: string
           header_http: Json | null
@@ -86,8 +87,10 @@ export type Database = {
           quantity: number | null
           regex_output: string | null
           short_description: string | null
+          subcategory: string | null
         }
         Insert: {
+          category?: string | null
           condition_reply_output?: string | null
           fornitore_url: string
           header_http?: Json | null
@@ -101,8 +104,10 @@ export type Database = {
           quantity?: number | null
           regex_output?: string | null
           short_description?: string | null
+          subcategory?: string | null
         }
         Update: {
+          category?: string | null
           condition_reply_output?: string | null
           fornitore_url?: string
           header_http?: Json | null
@@ -116,6 +121,7 @@ export type Database = {
           quantity?: number | null
           regex_output?: string | null
           short_description?: string | null
+          subcategory?: string | null
         }
         Relationships: []
       }

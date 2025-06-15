@@ -5,6 +5,7 @@ import HistoryForm from '@/components/HistoryForm';
 import ApiEndpointsPanel from '@/components/ApiEndpointsPanel';
 import TransactionList from '@/components/TransactionList';
 import RefundForm from '@/components/RefundForm';
+import CategoryFilter from '@/components/CategoryFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ interface Product {
   payload_template: any;
   http_method: string;
   short_description?: string;
+  category: string;
+  subcategory: string;
 }
 
 interface FullProduct {
@@ -50,6 +53,10 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [apiResult, setApiResult] = useState<any>(null);
   
+  // Category filter states
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('All');
+  
   const [historyToken, setHistoryToken] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -58,6 +65,27 @@ const Index = () => {
   const { toast } = useToast();
 
   const baseUrl = 'https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1';
+
+  // Filter products based on selected category and subcategory
+  const filteredProducts = products.filter(product => {
+    if (selectedCategory === 'All') return true;
+    if (product.category !== selectedCategory) return false;
+    if (selectedSubcategory === 'All') return true;
+    return product.subcategory === selectedSubcategory;
+  });
+
+  // Handle category change
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedSubcategory('All'); // Reset subcategory when category changes
+    setSelectedProduct(''); // Reset selected product
+  };
+
+  // Handle subcategory change
+  const handleSubcategoryChange = (subcategory: string) => {
+    setSelectedSubcategory(subcategory);
+    setSelectedProduct(''); // Reset selected product
+  };
 
   // Load products on component mount
   useEffect(() => {
@@ -288,12 +316,12 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 relative">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">API Management Dashboard</h1>
-          <p className="text-xl text-gray-600">Manage your API requests and view transaction history</p>
+          <p className="text-xl text-gray-600 mb-4">Manage your API requests and view transaction history</p>
           
-          {/* Services & Utils Button */}
-          <div className="mt-6">
+          {/* Services & Utils Button - positioned top right */}
+          <div className="absolute top-0 right-0">
             <Button 
               onClick={() => window.location.href = '/services-utils'}
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 text-lg"
@@ -301,11 +329,22 @@ const Index = () => {
               Services & Utils
             </Button>
           </div>
+          
+          {/* Category Filter */}
+          <div className="mt-6">
+            <CategoryFilter
+              products={products}
+              selectedCategory={selectedCategory}
+              selectedSubcategory={selectedSubcategory}
+              onCategoryChange={handleCategoryChange}
+              onSubcategoryChange={handleSubcategoryChange}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <RequestForm
-            products={products}
+            products={filteredProducts}
             selectedProduct={selectedProduct}
             token={token}
             quantity={quantity}
