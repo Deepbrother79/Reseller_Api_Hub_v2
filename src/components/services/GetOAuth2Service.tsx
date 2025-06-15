@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Copy, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,10 +160,26 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Get OAuth2 Token</CardTitle>
-          <p className="text-sm text-gray-600">
-            Retrieve OAuth2 tokens using email credentials. Format: email@domain.com|password
-          </p>
+          <div className="flex items-center gap-2 mb-2">
+            <CardTitle>Get OAuth2 Token</CardTitle>
+            <Badge className="bg-yellow-200 text-yellow-800 hover:bg-yellow-200">
+              coming soon
+            </Badge>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600">
+              Retrieve OAuth2 tokens using email credentials. Format: email@domain.com|password
+            </p>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-cyan-100 text-cyan-800 hover:bg-cyan-100">
+                Outlook
+              </Badge>
+              <span className="text-sm text-gray-500">and</span>
+              <Badge className="bg-cyan-100 text-cyan-800 hover:bg-cyan-100">
+                Hotmail
+              </Badge>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
