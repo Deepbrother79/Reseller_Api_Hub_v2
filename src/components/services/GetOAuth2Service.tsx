@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -168,7 +169,7 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
           </div>
           <div className="space-y-2">
             <p className="text-sm text-gray-600">
-              Retrieve OAuth2 tokens using email credentials. Format: email@domain.com|password
+              Retrieve OAuth2 (refresh_token|client_id) tokens using email credentials. Format: email@domain.com|password
             </p>
             <div className="flex items-center gap-2">
               <Badge className="bg-cyan-100 text-cyan-800 hover:bg-cyan-100">
