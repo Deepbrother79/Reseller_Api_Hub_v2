@@ -25,50 +25,18 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get all products with their complete info (internal use) including category and subcategory fields
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, short_description, fornitore_url, payload_template, http_method, product_type, quantity, category, subcategory');
+      .select('id, name, short_description, category, subcategory, quantity');
 
     if (error) {
       throw error;
     }
 
-    // For products where quantity is null or we want fresh data, 
-    // calculate the quantity based on product type
-    const updatedProducts = await Promise.all(
-      (products || []).map(async (product) => {
-        let actualQuantity = product.quantity;
-
-        // If quantity is null or 0, try to get fresh count
-        if (actualQuantity === null || actualQuantity === 0) {
-          if (product.product_type === 'digital') {
-            // Count available digital products
-            const { count, error: countError } = await supabase
-              .from('digital_products')
-              .select('*', { count: 'exact', head: true })
-              .eq('product_id', product.id)
-              .eq('is_used', false);
-
-            if (!countError) {
-              actualQuantity = count || 0;
-            }
-          }
-          // For API products, we keep the existing quantity from the database
-          // as it should be updated by the update-products-quantity function
-        }
-
-        return {
-          ...product,
-          quantity: actualQuantity
-        };
-      })
-    );
-
     return new Response(
       JSON.stringify({ 
         success: true, 
-        products: updatedProducts
+        products: products || [] 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

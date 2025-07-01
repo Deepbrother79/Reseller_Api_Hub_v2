@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +11,6 @@ import ProductTooltip from './ProductTooltip';
 interface Product {
   id: string;
   name: string;
-  fornitore_url: string;
-  payload_template: any;
-  http_method: string;
   short_description?: string;
   quantity?: number;
 }

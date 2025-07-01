@@ -13,9 +13,6 @@ import { Button } from '@/components/ui/button';
 interface Product {
   id: string;
   name: string;
-  fornitore_url: string;
-  payload_template: any;
-  http_method: string;
   short_description?: string;
   category: string;
   subcategory: string;
