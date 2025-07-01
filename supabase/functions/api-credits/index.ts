@@ -43,16 +43,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get token data with product information
+    console.log('Looking for token:', token);
+
+    // First, get the token data
     const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
-      .select(`
-        credits,
-        product_id,
-        products!inner(name)
-      `)
+      .select('credits, product_id')
       .eq('token', token)
       .single();
+
+    console.log('Token query result:', { tokenData, tokenError });
 
     if (tokenError || !tokenData) {
       return new Response(
@@ -64,11 +64,22 @@ serve(async (req) => {
       );
     }
 
+    // Then get the product name using the product_id
+    const { data: productData, error: productError } = await supabase
+      .from('products')
+      .select('name')
+      .eq('id', tokenData.product_id)
+      .single();
+
+    console.log('Product query result:', { productData, productError });
+
+    const productName = productData?.name || null;
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         credits: tokenData.credits,
-        product_name: tokenData.products?.name || null
+        product_name: productName
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
