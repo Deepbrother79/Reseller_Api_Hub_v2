@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,12 +103,12 @@ const RequestForm: React.FC<RequestFormProps> = ({
               <p className="text-sm text-gray-500">Loading products...</p>
             )}
             
-            {/* Mostra descrizione prodotto selezionato con quantità */}
+            {/* Show selected product description with quantity */}
             {selectedProductData && (
               <div className="mt-2">
                 <ProductTooltip 
                   productName={selectedProductData.name}
-                  description={selectedProductData.short_description || `API endpoint: ${selectedProductData.fornitore_url}`}
+                  description={selectedProductData.short_description || 'No description available'}
                 >
                   <div className="text-sm text-gray-600 p-2 bg-blue-50 rounded border-l-4 border-blue-200">
                     <div className="flex justify-between items-start">
