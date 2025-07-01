@@ -16,6 +16,7 @@ interface Product {
   payload_template: any;
   http_method: string;
   short_description?: string;
+  quantity?: number;
 }
 
 interface RequestFormProps {
@@ -105,7 +106,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
               <p className="text-sm text-gray-500">Loading products...</p>
             )}
             
-            {/* Mostra descrizione prodotto selezionato */}
+            {/* Mostra descrizione prodotto selezionato con quantità */}
             {selectedProductData && (
               <div className="mt-2">
                 <ProductTooltip 
@@ -113,12 +114,27 @@ const RequestForm: React.FC<RequestFormProps> = ({
                   description={selectedProductData.short_description || `API endpoint: ${selectedProductData.fornitore_url}`}
                 >
                   <div className="text-sm text-gray-600 p-2 bg-blue-50 rounded border-l-4 border-blue-200">
-                    <strong>Selected:</strong> {selectedProductData.name}
-                    {selectedProductData.short_description && (
-                      <div className="mt-1 text-xs text-gray-500">
-                        {selectedProductData.short_description}
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <strong>Selected:</strong> {selectedProductData.name}
+                        {selectedProductData.short_description && (
+                          <div className="mt-1 text-xs text-gray-500">
+                            {selectedProductData.short_description}
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div className="ml-3 flex-shrink-0">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          selectedProductData.quantity === null || selectedProductData.quantity === undefined
+                            ? 'bg-gray-100 text-gray-500' 
+                            : selectedProductData.quantity >= 1 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-red-100 text-red-700'
+                        }`}>
+                          Qty: {selectedProductData.quantity === null || selectedProductData.quantity === undefined ? 'N/A' : selectedProductData.quantity}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </ProductTooltip>
               </div>

@@ -11,6 +11,7 @@ interface HistoryFormProps {
   historyToken: string;
   historyLoading: boolean;
   credits: number | null;
+  tokenProductName?: string;
   onHistoryTokenChange: (value: string) => void;
   onHistorySubmit: (e: React.FormEvent) => void;
   onCopyUrl: (url: string) => void;
@@ -22,6 +23,7 @@ const HistoryForm: React.FC<HistoryFormProps> = ({
   historyToken,
   historyLoading,
   credits,
+  tokenProductName,
   onHistoryTokenChange,
   onHistorySubmit,
   onCopyUrl,
@@ -38,6 +40,11 @@ const HistoryForm: React.FC<HistoryFormProps> = ({
         {credits !== null && historyToken && (
           <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-green-800 font-medium">Credits: {credits}</p>
+            {tokenProductName && (
+              <p className="text-green-700 text-sm mt-1">
+                Product: <span className="font-medium">{tokenProductName}</span>
+              </p>
+            )}
           </div>
         )}
       </CardHeader>

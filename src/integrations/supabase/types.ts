@@ -75,7 +75,7 @@ export type Database = {
         Row: {
           category: string | null
           condition_reply_output: string | null
-          fornitore_url: string
+          fornitore_url: string | null
           header_http: Json | null
           http_method: string | null
           id: string
@@ -92,7 +92,7 @@ export type Database = {
         Insert: {
           category?: string | null
           condition_reply_output?: string | null
-          fornitore_url: string
+          fornitore_url?: string | null
           header_http?: Json | null
           http_method?: string | null
           id?: string
@@ -109,7 +109,7 @@ export type Database = {
         Update: {
           category?: string | null
           condition_reply_output?: string | null
-          fornitore_url?: string
+          fornitore_url?: string | null
           header_http?: Json | null
           http_method?: string | null
           id?: string
@@ -166,11 +166,66 @@ export type Database = {
           },
         ]
       }
+      products_replace: {
+        Row: {
+          category: string | null
+          condition_reply_output: string | null
+          fornitore_url: string
+          header_http: Json | null
+          http_method: string | null
+          id: string
+          inbox_compatible: boolean | null
+          name: string
+          path_body: string | null
+          payload_template: Json | null
+          product_type: string
+          quantity: number | null
+          regex_output: string | null
+          short_description: string | null
+          subcategory: string | null
+        }
+        Insert: {
+          category?: string | null
+          condition_reply_output?: string | null
+          fornitore_url: string
+          header_http?: Json | null
+          http_method?: string | null
+          id?: string
+          inbox_compatible?: boolean | null
+          name: string
+          path_body?: string | null
+          payload_template?: Json | null
+          product_type?: string
+          quantity?: number | null
+          regex_output?: string | null
+          short_description?: string | null
+          subcategory?: string | null
+        }
+        Update: {
+          category?: string | null
+          condition_reply_output?: string | null
+          fornitore_url?: string
+          header_http?: Json | null
+          http_method?: string | null
+          id?: string
+          inbox_compatible?: boolean | null
+          name?: string
+          path_body?: string | null
+          payload_template?: Json | null
+          product_type?: string
+          quantity?: number | null
+          regex_output?: string | null
+          short_description?: string | null
+          subcategory?: string | null
+        }
+        Relationships: []
+      }
       refund_transactions: {
         Row: {
           created_at: string
           id: string
           refund_status: string
+          Refunded: boolean | null
           response_message: string | null
           transaction_id: string
         }
@@ -178,6 +233,7 @@ export type Database = {
           created_at?: string
           id?: string
           refund_status: string
+          Refunded?: boolean | null
           response_message?: string | null
           transaction_id: string
         }
@@ -185,6 +241,7 @@ export type Database = {
           created_at?: string
           id?: string
           refund_status?: string
+          Refunded?: boolean | null
           response_message?: string | null
           transaction_id?: string
         }

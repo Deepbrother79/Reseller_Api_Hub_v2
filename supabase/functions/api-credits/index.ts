@@ -5,72 +5,80 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const url = new URL(req.url);
-    const token = url.searchParams.get('token');
+    let token;
 
-    console.log('Fetching credits for token:', token ? '[PROVIDED]' : '[NOT PROVIDED]');
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      token = url.searchParams.get('token');
+    } else if (req.method === 'POST') {
+      const body = await req.json();
+      token = body.token;
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Validate input
     if (!token) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "Token is required" 
+          error: 'Missing required parameter: token' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get credits for the token
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get token data with product information
     const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
-      .select('credits')
+      .select(`
+        credits,
+        product_id,
+        products!inner(name)
+      `)
       .eq('token', token)
       .single();
 
     if (tokenError || !tokenData) {
-      console.log('Token not found or error:', tokenError);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "Token not found",
-          credits: 0
+          error: 'Token not found' 
         }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Credits found for token:', tokenData.credits);
-
     return new Response(
       JSON.stringify({ 
         success: true, 
-        credits: tokenData.credits || 0
+        credits: tokenData.credits,
+        product_name: tokenData.products?.name || null
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Error fetching credits:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
-        message: "Internal server error",
-        credits: 0
+        error: 'Internal server error' 
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

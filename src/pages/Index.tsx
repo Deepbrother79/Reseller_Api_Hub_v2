@@ -19,6 +19,7 @@ interface Product {
   short_description?: string;
   category: string;
   subcategory: string;
+  quantity?: number;
 }
 
 interface FullProduct {
@@ -61,6 +62,7 @@ const Index = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [credits, setCredits] = useState<number | null>(null);
+  const [tokenProductName, setTokenProductName] = useState<string>('');
   
   const { toast } = useToast();
 
@@ -254,12 +256,21 @@ const Index = () => {
       
       if (data.success && data.credits !== undefined) {
         setCredits(data.credits);
+        
+        // Fetch product name associated with this token
+        if (data.product_name) {
+          setTokenProductName(data.product_name);
+        } else {
+          setTokenProductName('');
+        }
       } else {
         setCredits(null);
+        setTokenProductName('');
       }
     } catch (error) {
       console.error('Error fetching credits:', error);
       setCredits(null);
+      setTokenProductName('');
     }
   };
 
@@ -311,6 +322,7 @@ const Index = () => {
   const handleHistoryTokenChange = (value: string) => {
     setHistoryToken(value);
     setCredits(null); // Reset credits when token changes
+    setTokenProductName(''); // Reset product name when token changes
   };
 
   return (
@@ -364,6 +376,7 @@ const Index = () => {
             historyToken={historyToken}
             historyLoading={historyLoading}
             credits={credits}
+            tokenProductName={tokenProductName}
             onHistoryTokenChange={handleHistoryTokenChange}
             onHistorySubmit={handleHistorySubmit}
             onCopyUrl={copyToClipboard}
