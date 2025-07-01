@@ -45,16 +45,27 @@ serve(async (req) => {
 
     console.log('Looking for token:', token);
 
-    // First, get the token data
+    // Get token data - usando .maybeSingle() invece di .single() per evitare errori se non esiste
     const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
-      .select('credits, product_id')
+      .select('credits, name')
       .eq('token', token)
-      .single();
+      .maybeSingle();
 
     console.log('Token query result:', { tokenData, tokenError });
 
-    if (tokenError || !tokenData) {
+    if (tokenError) {
+      console.error('Database error:', tokenError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Database error' 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!tokenData) {
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -64,22 +75,11 @@ serve(async (req) => {
       );
     }
 
-    // Then get the product name using the product_id
-    const { data: productData, error: productError } = await supabase
-      .from('products')
-      .select('name')
-      .eq('id', tokenData.product_id)
-      .single();
-
-    console.log('Product query result:', { productData, productError });
-
-    const productName = productData?.name || null;
-
     return new Response(
       JSON.stringify({ 
         success: true, 
         credits: tokenData.credits,
-        product_name: productName
+        product_name: tokenData.name
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
