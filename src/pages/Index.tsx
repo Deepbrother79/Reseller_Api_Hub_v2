@@ -253,18 +253,18 @@ const Index = () => {
       
       console.log('Credits API response:', data);
       
-      if (data.success && data.credits !== undefined) {
+      if (response.ok && data.success && typeof data.credits === 'number') {
         setCredits(data.credits);
         
-        // Fetch product name associated with this token
-        if (data.product_name) {
+        // Set product name associated with this token
+        if (data.product_name && typeof data.product_name === 'string') {
           setTokenProductName(data.product_name);
         } else {
           setTokenProductName('');
         }
       } else {
-        // Anche quando success è false, impostiamo i valori a null/vuoto
-        console.log('Credits API returned false or no credits data:', data);
+        // When API fails or returns error, reset values
+        console.log('Credits API returned error or invalid data:', data);
         setCredits(null);
         setTokenProductName('');
       }
