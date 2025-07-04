@@ -251,6 +251,8 @@ const Index = () => {
       const response = await fetch(`${baseUrl}/api-credits?token=${encodeURIComponent(tokenValue)}`);
       const data = await response.json();
       
+      console.log('Credits API response:', data);
+      
       if (data.success && data.credits !== undefined) {
         setCredits(data.credits);
         
@@ -261,6 +263,8 @@ const Index = () => {
           setTokenProductName('');
         }
       } else {
+        // Anche quando success è false, impostiamo i valori a null/vuoto
+        console.log('Credits API returned false or no credits data:', data);
         setCredits(null);
         setTokenProductName('');
       }
