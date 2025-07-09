@@ -192,6 +192,31 @@ const RequestForm: React.FC<RequestFormProps> = ({
           </div>
         )}
 
+        {/* Show Transaction ID if available */}
+        {apiResult && apiResult.transaction_id && (
+          <div className="mt-4">
+            <h3 className="font-semibold mb-3">Transaction ID:</h3>
+            <div className="bg-gray-100 p-3 rounded-lg">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium text-green-600">Transaction ID</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCopyUrl(apiResult.transaction_id)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <input
+                className="w-full text-xs bg-white p-2 rounded border font-mono"
+                value={apiResult.transaction_id}
+                readOnly
+                placeholder="Transaction ID will appear here..."
+              />
+            </div>
+          </div>
+        )}
+
         {/* Show API result */}
         {apiResult && (
           <div className="mt-6">
