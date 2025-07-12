@@ -51,30 +51,52 @@ serve(async (req) => {
       );
     }
 
-    // Check token and credits
-    const { data: tokenData, error: tokenError } = await supabase
+    // Check token type and credits
+    let tokenData;
+    let isMasterToken = false;
+    let requiredCredits = qty;
+
+    // First, try to find in regular tokens table
+    const { data: regularToken, error: regularTokenError } = await supabase
       .from('tokens')
       .select('*')
       .eq('token', token)
       .eq('product_id', product.id)
-      .single();
+      .maybeSingle();
 
-    if (tokenError || !tokenData) {
-      console.error('Invalid token:', tokenError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: "Invalid token or token not found for this product" 
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (regularToken) {
+      tokenData = regularToken;
+      console.log('Using regular token');
+    } else {
+      // Try to find in master tokens table
+      const { data: masterToken, error: masterTokenError } = await supabase
+        .from('tokens_master')
+        .select('*')
+        .eq('token', token)
+        .maybeSingle();
+
+      if (masterToken) {
+        tokenData = masterToken;
+        isMasterToken = true;
+        requiredCredits = qty * product.value; // Calculate credits based on product value
+        console.log('Using master token, required credits:', requiredCredits);
+      } else {
+        console.error('Token not found in either table');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: "Invalid token or token not found for this product" 
+          }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
-    if (tokenData.credits < qty) {
+    if (tokenData.credits < requiredCredits) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: `Insufficient credits. Available: ${tokenData.credits}, Required: ${qty}` 
+          message: `Insufficient credits. Available: ${tokenData.credits}, Required: ${requiredCredits}` 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -369,9 +391,12 @@ serve(async (req) => {
 
     // Update token credits only if successful
     if (status === 'success') {
+      const tableName = isMasterToken ? 'tokens_master' : 'tokens';
+      const newCredits = tokenData.credits - requiredCredits;
+      
       const { error: updateError } = await supabase
-        .from('tokens')
-        .update({ credits: tokenData.credits - qty })
+        .from(tableName)
+        .update({ credits: newCredits })
         .eq('token', token);
 
       if (updateError) {

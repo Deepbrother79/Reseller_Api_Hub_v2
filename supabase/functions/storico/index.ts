@@ -33,6 +33,29 @@ serve(async (req) => {
       );
     }
 
+    // Check if token exists in either tokens or tokens_master table
+    const { data: regularToken } = await supabase
+      .from('tokens')
+      .select('token')
+      .eq('token', token)
+      .maybeSingle();
+
+    const { data: masterToken } = await supabase
+      .from('tokens_master')
+      .select('token')
+      .eq('token', token)
+      .maybeSingle();
+
+    if (!regularToken && !masterToken) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: "Token not found" 
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get transactions for the token - only successful ones
     const { data: transactions, error: transactionError } = await supabase
       .from('transactions')

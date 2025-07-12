@@ -93,6 +93,7 @@ export type Database = {
           regex_output: string | null
           short_description: string | null
           subcategory: string | null
+          value: number | null
         }
         Insert: {
           category?: string | null
@@ -110,6 +111,7 @@ export type Database = {
           regex_output?: string | null
           short_description?: string | null
           subcategory?: string | null
+          value?: number | null
         }
         Update: {
           category?: string | null
@@ -127,6 +129,7 @@ export type Database = {
           regex_output?: string | null
           short_description?: string | null
           subcategory?: string | null
+          value?: number | null
         }
         Relationships: []
       }
@@ -298,6 +301,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tokens_master: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          name: string
+          note: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          id?: string
+          name?: string
+          note?: string | null
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          name?: string
+          note?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       transactions: {
         Row: {

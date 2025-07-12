@@ -17,12 +17,14 @@ interface Product {
   category: string;
   subcategory: string;
   quantity?: number;
+  value?: number;
 }
 
 interface FullProduct {
   id: string;
   name: string;
   quantity: number | null;
+  value?: number;
 }
 
 interface Transaction {
@@ -414,6 +416,7 @@ const Index = () => {
                     <TableHead>ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Quantity</TableHead>
+                    <TableHead>Value (Credits)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -430,6 +433,11 @@ const Index = () => {
                               : 'bg-red-100 text-red-800'
                         }`}>
                           {product.quantity === null ? 'N/A' : product.quantity}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
+                          {product.value?.toFixed(4) || '1.0000'}
                         </span>
                       </TableCell>
                     </TableRow>

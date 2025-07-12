@@ -45,17 +45,34 @@ serve(async (req) => {
 
     console.log('Looking for token:', token);
 
-    // Get token data - usando .maybeSingle() invece di .single() per evitare errori se non esiste
-    const { data: tokenData, error: tokenError } = await supabase
+    // Try to find in regular tokens table first
+    const { data: regularToken, error: regularTokenError } = await supabase
       .from('tokens')
       .select('credits, name')
       .eq('token', token)
       .maybeSingle();
 
-    console.log('Token query result:', { tokenData, tokenError });
+    let tokenData = regularToken;
+    let isMasterToken = false;
 
-    if (tokenError) {
-      console.error('Database error:', tokenError);
+    // If not found in regular tokens, try master tokens
+    if (!regularToken && !regularTokenError) {
+      const { data: masterToken, error: masterTokenError } = await supabase
+        .from('tokens_master')
+        .select('credits, name')
+        .eq('token', token)
+        .maybeSingle();
+
+      if (masterToken) {
+        tokenData = masterToken;
+        isMasterToken = true;
+      }
+    }
+
+    console.log('Token query result:', { tokenData, isMasterToken });
+
+    if (regularTokenError) {
+      console.error('Database error:', regularTokenError);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -79,7 +96,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         credits: tokenData.credits,
-        product_name: tokenData.name
+        product_name: isMasterToken ? 'Master Token' : tokenData.name,
+        is_master_token: isMasterToken
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

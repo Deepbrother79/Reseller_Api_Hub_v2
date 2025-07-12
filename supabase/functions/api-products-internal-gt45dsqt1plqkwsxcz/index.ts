@@ -27,7 +27,7 @@ serve(async (req) => {
 
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, short_description, category, subcategory, quantity');
+      .select('id, name, short_description, category, subcategory, quantity, value');
 
     if (error) {
       throw error;

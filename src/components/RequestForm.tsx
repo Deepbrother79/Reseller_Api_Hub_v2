@@ -14,6 +14,7 @@ interface Product {
   name: string;
   short_description?: string;
   quantity?: number;
+  value?: number;
 }
 
 interface RequestFormProps {
@@ -159,6 +160,23 @@ const RequestForm: React.FC<RequestFormProps> = ({
               onChange={(e) => onQuantityChange(e.target.value)}
               min="1"
             />
+            
+            {/* Show total value calculation */}
+            {selectedProductData && quantity && !isNaN(parseInt(quantity)) && (
+              <div className="mt-2 p-2 bg-yellow-50 rounded border-l-4 border-yellow-200">
+                <div className="text-sm">
+                  <span className="text-gray-600">Total Value: </span>
+                  <span className="font-semibold text-yellow-700">
+                    {(parseInt(quantity) * (selectedProductData.value || 1)).toFixed(4)} credits
+                  </span>
+                  {selectedProductData.value && selectedProductData.value !== 1 && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {quantity} × {selectedProductData.value.toFixed(4)} credits per unit
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

@@ -25,10 +25,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get only public product data (id, name, quantity)
+    // Get only public product data (id, name, quantity, value)
     const { data: products, error } = await supabase
       .from('products')
-      .select('id, name, quantity, product_type');
+      .select('id, name, quantity, product_type, value');
 
     if (error) {
       throw error;
@@ -59,7 +59,8 @@ serve(async (req) => {
         return {
           id: product.id,
           name: product.name,
-          quantity: actualQuantity
+          quantity: actualQuantity,
+          value: product.value
         };
       })
     );
