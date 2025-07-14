@@ -416,7 +416,7 @@ const Index = () => {
                     <TableHead>ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Quantity</TableHead>
-                    <TableHead>Value (Credits)</TableHead>
+                    <TableHead>Value USD (Credits Master)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

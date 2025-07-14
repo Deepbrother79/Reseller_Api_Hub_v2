@@ -165,9 +165,9 @@ const RequestForm: React.FC<RequestFormProps> = ({
             {selectedProductData && quantity && !isNaN(parseInt(quantity)) && (
               <div className="mt-2 p-2 bg-yellow-50 rounded border-l-4 border-yellow-200">
                 <div className="text-sm">
-                  <span className="text-gray-600">Total Value: </span>
+                  <span className="text-gray-600">Total Value USD (Credits Master): </span>
                   <span className="font-semibold text-yellow-700">
-                    {(parseInt(quantity) * (selectedProductData.value || 1)).toFixed(4)} credits
+                    {(parseInt(quantity) * (selectedProductData.value || 1)).toFixed(4)} credits master
                   </span>
                   {selectedProductData.value && selectedProductData.value !== 1 && (
                     <div className="text-xs text-gray-500 mt-1">

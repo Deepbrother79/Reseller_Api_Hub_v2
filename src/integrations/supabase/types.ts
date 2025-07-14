@@ -140,6 +140,7 @@ export type Database = {
           http_method: string
           id: string
           path_body: string | null
+          path_body_value: string | null
           payload_template: Json | null
           quantity: number | null
           regex_output: string | null
@@ -150,6 +151,7 @@ export type Database = {
           http_method?: string
           id: string
           path_body?: string | null
+          path_body_value?: string | null
           payload_template?: Json | null
           quantity?: number | null
           regex_output?: string | null
@@ -160,6 +162,7 @@ export type Database = {
           http_method?: string
           id?: string
           path_body?: string | null
+          path_body_value?: string | null
           payload_template?: Json | null
           quantity?: number | null
           regex_output?: string | null
