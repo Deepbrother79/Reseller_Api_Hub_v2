@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import RequestForm from '@/components/RequestForm';
 import HistoryForm from '@/components/HistoryForm';
 import ApiEndpointsPanel from '@/components/ApiEndpointsPanel';
@@ -139,6 +140,42 @@ const Index = () => {
     loadProducts();
     loadFullProducts();
   }, [toast, baseUrl]);
+
+  // Subscribe to realtime updates for products quantity
+  useEffect(() => {
+    const channel = supabase
+      .channel('products-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'products'
+        },
+        (payload) => {
+          const updatedProduct = payload.new as FullProduct;
+          
+          // Update products list
+          setProducts(prev => prev.map(product => 
+            product.id === updatedProduct.id 
+              ? { ...product, quantity: updatedProduct.quantity }
+              : product
+          ));
+          
+          // Update full products list
+          setFullProducts(prev => prev.map(product => 
+            product.id === updatedProduct.id 
+              ? { ...product, quantity: updatedProduct.quantity }
+              : product
+          ));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
