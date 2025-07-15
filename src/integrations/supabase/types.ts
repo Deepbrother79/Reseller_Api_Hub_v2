@@ -76,6 +76,33 @@ export type Database = {
         }
         Relationships: []
       }
+      processed_used_goods: {
+        Row: {
+          created_at: string
+          digit_item_ref: string
+          id: string
+          last_check_time: string
+          start_check_time: number
+          used_items: string
+        }
+        Insert: {
+          created_at?: string
+          digit_item_ref: string
+          id?: string
+          last_check_time?: string
+          start_check_time: number
+          used_items: string
+        }
+        Update: {
+          created_at?: string
+          digit_item_ref?: string
+          id?: string
+          last_check_time?: string
+          start_check_time?: number
+          used_items?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null

@@ -32,6 +32,7 @@ interface RequestFormProps {
   generateProcessRequestBody: () => string;
   apiResult: any;
   baseUrl: string;
+  updatedProductIds?: Set<string>;
 }
 
 const RequestForm: React.FC<RequestFormProps> = ({
@@ -48,7 +49,8 @@ const RequestForm: React.FC<RequestFormProps> = ({
   generateProcessRequestUrl,
   generateProcessRequestBody,
   apiResult,
-  baseUrl
+  baseUrl,
+  updatedProductIds = new Set()
 }) => {
   const selectedProductData = products.find(p => p.id === selectedProduct);
 
@@ -122,12 +124,14 @@ const RequestForm: React.FC<RequestFormProps> = ({
                         )}
                       </div>
                       <div className="ml-3 flex-shrink-0">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          selectedProductData.quantity === null || selectedProductData.quantity === undefined
-                            ? 'bg-gray-100 text-gray-500' 
-                            : selectedProductData.quantity >= 1 
-                              ? 'bg-green-100 text-green-700' 
-                              : 'bg-red-100 text-red-700'
+                        <span className={`px-2 py-1 rounded text-xs font-medium transition-all duration-300 ${
+                          updatedProductIds.has(selectedProductData.id)
+                            ? 'animate-pulse bg-yellow-200 text-yellow-800 scale-110 shadow-lg'
+                            : selectedProductData.quantity === null || selectedProductData.quantity === undefined
+                              ? 'bg-gray-100 text-gray-500' 
+                              : selectedProductData.quantity >= 1 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-red-100 text-red-700'
                         }`}>
                           Qty: {selectedProductData.quantity === null || selectedProductData.quantity === undefined ? 'N/A' : selectedProductData.quantity}
                         </span>

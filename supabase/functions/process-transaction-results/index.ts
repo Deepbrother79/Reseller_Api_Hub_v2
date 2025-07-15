@@ -18,36 +18,18 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Starting transaction results processing...')
+    console.log('Starting transaction results processing with new logic...')
 
-    // Target product IDs to extract results from
-    const targetProductIds = [
-      '2ab279e8-714f-434e-92e9-875f734c0eed',
-      '92e09be4-b552-48d8-b474-9e01d10b1cf3'
-    ]
+    // Fetch all configuration rows from processed_used_goods table
+    const { data: configs, error: configError } = await supabaseClient
+      .from('processed_used_goods')
+      .select('*')
+      .order('created_at', { ascending: true })
 
-    // Destination product ID for digital_products
-    const destinationProductId = '86a2bb3d-f3c4-4f90-ac96-a2b7575467f8'
-
-    const now = new Date()
-    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000)
-    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000)
-
-    console.log(`Processing transactions between ${sixHoursAgo.toISOString()} and ${thirtyMinutesAgo.toISOString()}`)
-
-    // Get transactions that meet the criteria
-    const { data: transactions, error: transactionsError } = await supabaseClient
-      .from('transactions')
-      .select('id, output_result, timestamp')
-      .in('product_id', targetProductIds)
-      .eq('status', 'success')
-      .gte('timestamp', sixHoursAgo.toISOString())
-      .lte('timestamp', thirtyMinutesAgo.toISOString())
-
-    if (transactionsError) {
-      console.error('Error fetching transactions:', transactionsError)
+    if (configError) {
+      console.error('Error fetching configs:', configError)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch transactions' }),
+        JSON.stringify({ error: 'Failed to fetch processing configurations' }),
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -55,10 +37,10 @@ serve(async (req) => {
       )
     }
 
-    if (!transactions || transactions.length === 0) {
-      console.log('No transactions found matching criteria')
+    if (!configs || configs.length === 0) {
+      console.log('No processing configurations found')
       return new Response(
-        JSON.stringify({ message: 'No transactions to process', processed: 0 }),
+        JSON.stringify({ message: 'No processing configurations found', processedCount: 0 }),
         { 
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -66,111 +48,167 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Found ${transactions.length} transactions to process`)
+    console.log(`Found ${configs.length} processing configurations`)
 
-    // Check which transactions have already been processed
-    const transactionIds = transactions.map(t => t.id)
-    
-    // We'll use a custom approach to track processed transactions
-    // First, let's get all digital_products that might have been created from these transactions
-    const { data: existingDigitalProducts, error: existingError } = await supabaseClient
-      .from('digital_products')
-      .select('id')
-      .eq('product_id', destinationProductId)
+    let totalProcessedTransactions = 0
+    let totalSuccessfulInserts = 0
+    let totalErrors = 0
 
-    if (existingError) {
-      console.error('Error checking existing digital products:', existingError)
-    }
+    // Process each configuration
+    for (const config of configs) {
+      console.log(`Processing config ${config.id}`)
 
-    let totalProcessed = 0
-    const insertPromises = []
+      // Parse used_items (comma-separated product IDs)
+      const targetProductIds = config.used_items.split(',').map(id => id.trim())
+      const destinationProductId = config.digit_item_ref
+      const startCheckMinutes = config.start_check_time
+      const lastCheckTime = new Date(config.last_check_time)
 
-    for (const transaction of transactions) {
-      try {
-        if (!transaction.output_result) {
-          console.log(`Transaction ${transaction.id} has no output_result, skipping`)
-          continue
+      console.log('Config details:', {
+        targetProductIds,
+        destinationProductId,
+        startCheckMinutes,
+        lastCheckTime: lastCheckTime.toISOString()
+      })
+
+      // Calculate time window
+      const now = new Date()
+      const startCheckTime = new Date(now.getTime() - (startCheckMinutes * 60 * 1000))
+
+      // Fetch transactions after lastCheckTime and after startCheckMinutes
+      const timeThreshold = lastCheckTime > startCheckTime ? lastCheckTime : startCheckTime
+
+      console.log('Time threshold:', timeThreshold.toISOString())
+
+      const { data: transactions, error: transactionsError } = await supabaseClient
+        .from('transactions')
+        .select('*')
+        .in('product_id', targetProductIds)
+        .eq('status', 'success')
+        .gt('timestamp', timeThreshold.toISOString())
+        .order('timestamp', { ascending: true })
+
+      if (transactionsError) {
+        console.error('Error fetching transactions for config', config.id, ':', transactionsError)
+        continue
+      }
+
+      if (!transactions || transactions.length === 0) {
+        console.log(`No new transactions found for config ${config.id}`)
+        continue
+      }
+
+      console.log(`Found ${transactions.length} transactions to process for config ${config.id}`)
+
+      // Process each transaction
+      const insertPromises = []
+      let latestTimestamp = lastCheckTime
+      
+      for (const transaction of transactions) {
+        // Track the latest timestamp
+        const transactionTime = new Date(transaction.timestamp)
+        if (transactionTime > latestTimestamp) {
+          latestTimestamp = transactionTime
         }
 
-        let results = []
+        let outputResults = []
         
-        // Parse output_result - it could be a string or already parsed array
-        if (typeof transaction.output_result === 'string') {
-          try {
-            results = JSON.parse(transaction.output_result)
-          } catch (parseError) {
-            console.error(`Error parsing output_result for transaction ${transaction.id}:`, parseError)
-            continue
-          }
-        } else if (Array.isArray(transaction.output_result)) {
-          results = transaction.output_result
-        } else {
-          // Single result case
-          results = [transaction.output_result]
-        }
-
-        // Ensure results is an array
-        if (!Array.isArray(results)) {
-          results = [results]
-        }
-
-        console.log(`Processing transaction ${transaction.id} with ${results.length} results`)
-
-        // Create digital_products entries for each result
-        for (const result of results) {
-          if (result && typeof result === 'string' && result.trim()) {
-            // Clean the result - remove quotes and brackets if present
-            const cleanResult = result.toString().replace(/^["'\[\]]+|["'\[\]]+$/g, '').trim()
-            
-            if (cleanResult) {
-              const digitalProductInsert = {
-                product_id: destinationProductId,
-                content: cleanResult,
-                is_used: false
-              }
-
-              insertPromises.push(
-                supabaseClient
-                  .from('digital_products')
-                  .insert(digitalProductInsert)
-              )
-              
-              totalProcessed++
+        // Parse output_result - it can be string or array
+        if (transaction.output_result) {
+          if (typeof transaction.output_result === 'string') {
+            try {
+              // Try to parse as JSON first
+              const parsed = JSON.parse(transaction.output_result)
+              outputResults = Array.isArray(parsed) ? parsed : [parsed]
+            } catch {
+              // If not JSON, treat as single string
+              outputResults = [transaction.output_result]
             }
+          } else if (Array.isArray(transaction.output_result)) {
+            outputResults = transaction.output_result
+          } else {
+            // If it's an object, convert to array
+            outputResults = [transaction.output_result]
           }
         }
 
-      } catch (error) {
-        console.error(`Error processing transaction ${transaction.id}:`, error)
+        console.log(`Transaction ${transaction.id} has ${outputResults.length} results`)
+
+        // Create insert operations for each result
+        for (const result of outputResults) {
+          let cleanResult = result
+          
+          // Clean the result: remove brackets and quotes if it's a string
+          if (typeof result === 'string') {
+            cleanResult = result.replace(/^\["|"\]$/g, '').replace(/^"|"$/g, '')
+          } else {
+            // If it's not a string, convert to string and clean
+            cleanResult = String(result).replace(/^\["|"\]$/g, '').replace(/^"|"$/g, '')
+          }
+
+          if (cleanResult && cleanResult.trim()) {
+            insertPromises.push(
+              supabaseClient
+                .from('digital_products')
+                .insert({
+                  content: cleanResult.trim(),
+                  product_id: destinationProductId,
+                  is_used: false
+                })
+            )
+          }
+        }
+      }
+
+      // Execute all inserts for this config
+      if (insertPromises.length > 0) {
+        const results = await Promise.allSettled(insertPromises)
+        
+        // Count successful inserts
+        let successCount = 0
+        let errorCount = 0
+        
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled' && !result.value.error) {
+            successCount++
+          } else {
+            errorCount++
+            console.error(`Insert ${index} failed for config ${config.id}:`, 
+              result.status === 'rejected' ? result.reason : result.value.error)
+          }
+        })
+
+        totalProcessedTransactions += transactions.length
+        totalSuccessfulInserts += successCount
+        totalErrors += errorCount
+
+        // Update last_check_time with the latest transaction timestamp
+        if (latestTimestamp > lastCheckTime) {
+          const { error: updateError } = await supabaseClient
+            .from('processed_used_goods')
+            .update({ last_check_time: latestTimestamp.toISOString() })
+            .eq('id', config.id)
+
+          if (updateError) {
+            console.error(`Error updating last_check_time for config ${config.id}:`, updateError)
+          } else {
+            console.log(`Updated last_check_time for config ${config.id} to:`, latestTimestamp.toISOString())
+          }
+        }
+
+        console.log(`Config ${config.id} processing complete. Successful inserts: ${successCount}, Errors: ${errorCount}`)
       }
     }
 
-    // Execute all inserts
-    if (insertPromises.length > 0) {
-      console.log(`Inserting ${insertPromises.length} digital products...`)
-      
-      const insertResults = await Promise.allSettled(insertPromises)
-      
-      let successfulInserts = 0
-      let failedInserts = 0
-      
-      insertResults.forEach((result, index) => {
-        if (result.status === 'fulfilled' && !result.value.error) {
-          successfulInserts++
-        } else {
-          failedInserts++
-          console.error(`Insert ${index} failed:`, result.status === 'rejected' ? result.reason : result.value.error)
-        }
-      })
-
-      console.log(`Inserts completed: ${successfulInserts} successful, ${failedInserts} failed`)
-    }
+    console.log(`Overall processing complete. Total transactions: ${totalProcessedTransactions}, Total successful inserts: ${totalSuccessfulInserts}, Total errors: ${totalErrors}`)
 
     return new Response(
-      JSON.stringify({
-        message: 'Transaction results processed successfully',
-        processed: totalProcessed,
-        transactions_found: transactions.length
+      JSON.stringify({ 
+        message: 'Processing complete',
+        processedConfigurations: configs.length,
+        totalProcessedTransactions,
+        totalSuccessfulInserts,
+        totalErrors
       }),
       { 
         status: 200,

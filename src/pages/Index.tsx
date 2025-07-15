@@ -141,6 +141,9 @@ const Index = () => {
     loadFullProducts();
   }, [toast, baseUrl]);
 
+  // State for tracking which products have updated quantities
+  const [updatedProductIds, setUpdatedProductIds] = useState<Set<string>>(new Set());
+
   // Subscribe to realtime updates for products quantity
   useEffect(() => {
     const channel = supabase
@@ -155,6 +158,9 @@ const Index = () => {
         (payload) => {
           const updatedProduct = payload.new as FullProduct;
           
+          // Add visual feedback for updated quantity
+          setUpdatedProductIds(prev => new Set(prev).add(updatedProduct.id));
+          
           // Update products list
           setProducts(prev => prev.map(product => 
             product.id === updatedProduct.id 
@@ -168,6 +174,17 @@ const Index = () => {
               ? { ...product, quantity: updatedProduct.quantity }
               : product
           ));
+
+          // Note: selectedProduct is just an ID string, no need to update it here
+
+          // Remove visual feedback after animation
+          setTimeout(() => {
+            setUpdatedProductIds(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(updatedProduct.id);
+              return newSet;
+            });
+          }, 1000);
         }
       )
       .subscribe();
@@ -410,6 +427,7 @@ const Index = () => {
             generateProcessRequestBody={generateProcessRequestBody}
             apiResult={apiResult}
             baseUrl={baseUrl}
+            updatedProductIds={updatedProductIds}
           />
 
           <HistoryForm
@@ -462,12 +480,14 @@ const Index = () => {
                       <TableCell className="font-mono text-sm">{product.id}</TableCell>
                       <TableCell>{product.name}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded text-sm ${
-                          product.quantity === null 
-                            ? 'bg-gray-100 text-gray-500' 
-                            : product.quantity > 0 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
+                        <span className={`px-2 py-1 rounded text-sm transition-all duration-300 ${
+                          updatedProductIds.has(product.id)
+                            ? 'animate-pulse bg-yellow-200 text-yellow-800 scale-110 shadow-lg' 
+                            : product.quantity === null 
+                              ? 'bg-gray-100 text-gray-500' 
+                              : product.quantity > 0 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
                         }`}>
                           {product.quantity === null ? 'N/A' : product.quantity}
                         </span>
