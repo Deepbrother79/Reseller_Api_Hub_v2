@@ -71,11 +71,17 @@ serve(async (req) => {
         lastCheckTime: lastCheckTime.toISOString()
       })
 
-      // Calculate time window
+      // Calculate time window  
       const now = new Date()
       const startCheckTime = new Date(now.getTime() - (startCheckMinutes * 60 * 1000))
+      
+      console.log('Time comparison:', {
+        now: now.toISOString(),
+        startCheckTime: startCheckTime.toISOString(), 
+        lastCheckTime: lastCheckTime.toISOString()
+      })
 
-      // Fetch transactions after lastCheckTime and after startCheckMinutes
+      // Use the more recent of lastCheckTime and startCheckTime as threshold
       const timeThreshold = lastCheckTime > startCheckTime ? lastCheckTime : startCheckTime
 
       console.log('Time threshold:', timeThreshold.toISOString())
