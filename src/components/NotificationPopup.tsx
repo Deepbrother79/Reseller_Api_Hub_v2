@@ -94,10 +94,11 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({ forceVisib
     };
   }, []);
 
-  // Show popup when forceVisible is true
+  // Show popup when forceVisible is true and fetch notifications
   useEffect(() => {
     if (forceVisible) {
       setIsVisible(true);
+      fetchNotifications(); // Ricarica le notifiche quando viene aperto manualmente
     }
   }, [forceVisible]);
 

@@ -401,8 +401,7 @@ const Index = () => {
               onClick={() => setShowNotifications(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 text-lg"
             >
-              <Bell className="h-5 w-5 mr-2" />
-              Notifiche
+              🔔 Notifiche
             </Button>
             <Button 
               onClick={() => window.location.href = '/services-utils'}
