@@ -12,7 +12,12 @@ interface Notification {
   created_at: string;
 }
 
-export const NotificationPopup: React.FC = () => {
+interface NotificationPopupProps {
+  forceVisible?: boolean;
+  onClose?: () => void;
+}
+
+export const NotificationPopup: React.FC<NotificationPopupProps> = ({ forceVisible = false, onClose }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -40,6 +45,7 @@ export const NotificationPopup: React.FC = () => {
 
   const handleClose = () => {
     setIsVisible(false);
+    onClose?.();
   };
 
   const markAsRead = async (notificationId: number) => {
@@ -88,7 +94,14 @@ export const NotificationPopup: React.FC = () => {
     };
   }, []);
 
-  if (!isVisible || notifications.length === 0) {
+  // Show popup when forceVisible is true
+  useEffect(() => {
+    if (forceVisible) {
+      setIsVisible(true);
+    }
+  }, [forceVisible]);
+
+  if (!isVisible) {
     return null;
   }
 
@@ -113,7 +126,12 @@ export const NotificationPopup: React.FC = () => {
         </CardHeader>
         
         <CardContent className="p-0 max-h-[60vh] overflow-y-auto">
-          {notifications.map((notification) => (
+          {notifications.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground">
+              Nessuna notifica disponibile al momento.
+            </div>
+          ) : (
+            notifications.map((notification) => (
             <div
               key={notification.id}
               className="p-4 border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors"
@@ -144,7 +162,8 @@ export const NotificationPopup: React.FC = () => {
                 </Button>
               </div>
             </div>
-          ))}
+          ))
+          )}
         </CardContent>
       </Card>
     </div>

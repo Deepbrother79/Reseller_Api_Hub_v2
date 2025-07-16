@@ -11,6 +11,7 @@ import { NotificationPopup } from '@/components/NotificationPopup';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Bell } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -144,6 +145,9 @@ const Index = () => {
 
   // State for tracking which products have updated quantities
   const [updatedProductIds, setUpdatedProductIds] = useState<Set<string>>(new Set());
+  
+  // State for notification popup visibility
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Subscribe to realtime updates for products quantity
   useEffect(() => {
@@ -385,14 +389,21 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <NotificationPopup />
+      <NotificationPopup forceVisible={showNotifications} onClose={() => setShowNotifications(false)} />
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8 relative">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">API Management Dashboard</h1>
           <p className="text-xl text-gray-600 mb-4">Manage your API requests and view transaction history</p>
           
-          {/* Services & Utils Button - positioned top right */}
-          <div className="absolute top-0 right-0">
+          {/* Top right buttons */}
+          <div className="absolute top-0 right-0 flex gap-3">
+            <Button 
+              onClick={() => setShowNotifications(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 text-lg"
+            >
+              <Bell className="h-5 w-5 mr-2" />
+              Notifiche
+            </Button>
             <Button 
               onClick={() => window.location.href = '/services-utils'}
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 text-lg"
