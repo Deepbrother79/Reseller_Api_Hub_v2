@@ -7,6 +7,7 @@ import ApiEndpointsPanel from '@/components/ApiEndpointsPanel';
 import TransactionList from '@/components/TransactionList';
 import RefundForm from '@/components/RefundForm';
 import CategoryFilter from '@/components/CategoryFilter';
+import { NotificationPopup } from '@/components/NotificationPopup';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -384,6 +385,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <NotificationPopup />
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8 relative">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">API Management Dashboard</h1>

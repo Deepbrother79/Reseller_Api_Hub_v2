@@ -76,6 +76,30 @@ export type Database = {
         }
         Relationships: []
       }
+      Notification_Webapp: {
+        Row: {
+          Content: string | null
+          created_at: string
+          id: number
+          Title: string | null
+          visible: boolean | null
+        }
+        Insert: {
+          Content?: string | null
+          created_at?: string
+          id?: number
+          Title?: string | null
+          visible?: boolean | null
+        }
+        Update: {
+          Content?: string | null
+          created_at?: string
+          id?: number
+          Title?: string | null
+          visible?: boolean | null
+        }
+        Relationships: []
+      }
       processed_used_goods: {
         Row: {
           created_at: string
@@ -255,6 +279,27 @@ export type Database = {
           regex_output?: string | null
           short_description?: string | null
           subcategory?: string | null
+        }
+        Relationships: []
+      }
+      refund_payload_transactions: {
+        Row: {
+          created_at: string
+          id: number
+          payloads: string | null
+          Timing_hour: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          payloads?: string | null
+          Timing_hour?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          payloads?: string | null
+          Timing_hour?: number
         }
         Relationships: []
       }
