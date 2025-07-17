@@ -410,6 +410,7 @@ export type Database = {
       transactions: {
         Row: {
           id: string
+          note: string | null
           output_result: Json | null
           product_id: string
           product_name: string | null
@@ -421,6 +422,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          note?: string | null
           output_result?: Json | null
           product_id: string
           product_name?: string | null
@@ -432,6 +434,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          note?: string | null
           output_result?: Json | null
           product_id?: string
           product_name?: string | null

@@ -110,12 +110,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({ forceVisib
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-md max-h-[80vh] overflow-hidden bg-background border-2 shadow-2xl">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
-          <div>
-            <h2 className="text-lg font-bold text-foreground">NOTIFICHE</h2>
-            <p className="text-sm text-muted-foreground">
-              {notifications.length} nuove notifiche
-            </p>
-          </div>
+          <h2 className="text-lg font-bold text-foreground">NEWS</h2>
           <Button
             variant="ghost"
             size="sm"
@@ -157,7 +152,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({ forceVisib
                   variant="ghost"
                   size="sm"
                   onClick={() => markAsRead(notification.id)}
-                  className="h-6 w-6 p-0 hover:bg-muted rounded-full flex-shrink-0"
+                  className="h-6 w-6 p-0 hover:bg-muted rounded-full flex-shrink-0 text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-3 w-3" />
                 </Button>
