@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import RequestForm from '@/components/RequestForm';
@@ -67,6 +67,9 @@ const Index = () => {
   const [tokenProductName, setTokenProductName] = useState<string>('');
   const [showOnlyAvailableProducts, setShowOnlyAvailableProducts] = useState(true);
   
+  // Ref for the request form section
+  const requestFormRef = useRef<HTMLDivElement>(null);
+  
   const { toast } = useToast();
 
   const baseUrl = 'https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1';
@@ -98,6 +101,42 @@ const Index = () => {
   const handleSubcategoryChange = (subcategory: string) => {
     setSelectedSubcategory(subcategory);
     setSelectedProduct(''); // Reset selected product
+  };
+
+  // Handle product click from inventory table
+  const handleProductClick = (productId: string) => {
+    // Find the product in the main products array
+    const product = products.find(p => p.id === productId);
+    
+    if (product) {
+      // Set the selected product
+      setSelectedProduct(productId);
+      
+      // Update category filters to match the selected product
+      setSelectedCategory(product.category);
+      setSelectedSubcategory(product.subcategory);
+      
+      // Scroll to the request form
+      if (requestFormRef.current) {
+        requestFormRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+      
+      // Show success toast
+      toast({
+        title: "Product Selected",
+        description: `Selected: ${product.name}`,
+      });
+    } else {
+      // If product not found in main products array, show warning
+      toast({
+        title: "Product Not Available",
+        description: "This product is not available for requests",
+        variant: "destructive",
+      });
+    }
   };
 
   // Load products on component mount
@@ -432,7 +471,7 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" ref={requestFormRef}>
           <RequestForm
             products={filteredProducts}
             selectedProduct={selectedProduct}
@@ -509,10 +548,26 @@ const Index = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredFullProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-mono text-sm">{product.id}</TableCell>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>
+                    <TableRow key={product.id} className="hover:bg-gray-50 transition-colors">
+                      <TableCell 
+                        className="font-mono text-sm cursor-pointer hover:text-blue-600 hover:underline transition-colors" 
+                        onClick={() => handleProductClick(product.id)}
+                        title="Click to select this product"
+                      >
+                        {product.id}
+                      </TableCell>
+                      <TableCell 
+                        className="cursor-pointer hover:text-blue-600 hover:underline transition-colors font-medium" 
+                        onClick={() => handleProductClick(product.id)}
+                        title="Click to select this product"
+                      >
+                        {product.name}
+                      </TableCell>
+                      <TableCell 
+                        className="cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => handleProductClick(product.id)}
+                        title="Click to select this product"
+                      >
                         <span className={`px-2 py-1 rounded text-sm transition-all duration-300 ${
                           updatedProductIds.has(product.id)
                             ? 'animate-pulse bg-yellow-200 text-yellow-800 scale-110 shadow-lg' 
@@ -525,7 +580,11 @@ const Index = () => {
                           {product.quantity === null ? 'N/A' : product.quantity}
                         </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell 
+                        className="cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => handleProductClick(product.id)}
+                        title="Click to select this product"
+                      >
                         <span className="px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
                           {product.value?.toFixed(4) || '1.0000'}
                         </span>
