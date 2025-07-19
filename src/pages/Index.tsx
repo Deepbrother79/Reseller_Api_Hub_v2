@@ -65,6 +65,7 @@ const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [credits, setCredits] = useState<number | null>(null);
   const [tokenProductName, setTokenProductName] = useState<string>('');
+  const [showOnlyAvailableProducts, setShowOnlyAvailableProducts] = useState(true);
   
   const { toast } = useToast();
 
@@ -76,6 +77,14 @@ const Index = () => {
     if (product.category !== selectedCategory) return false;
     if (selectedSubcategory === 'All') return true;
     return product.subcategory === selectedSubcategory;
+  });
+
+  // Filter full products based on availability
+  const filteredFullProducts = fullProducts.filter(product => {
+    if (showOnlyAvailableProducts) {
+      return product.quantity !== null && product.quantity > 0;
+    }
+    return true;
   });
 
   // Handle category change
@@ -473,8 +482,20 @@ const Index = () => {
         {/* Products Table */}
         <div className="mt-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle>Products Inventory</CardTitle>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="availableOnly"
+                  checked={showOnlyAvailableProducts}
+                  onChange={(e) => setShowOnlyAvailableProducts(e.target.checked)}
+                  className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-ring focus:ring-2"
+                />
+                <label htmlFor="availableOnly" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Show only available products
+                </label>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -487,7 +508,7 @@ const Index = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {fullProducts.map((product) => (
+                  {filteredFullProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-mono text-sm">{product.id}</TableCell>
                       <TableCell>{product.name}</TableCell>
@@ -513,9 +534,9 @@ const Index = () => {
                   ))}
                 </TableBody>
               </Table>
-              {fullProducts.length === 0 && (
+              {filteredFullProducts.length === 0 && (
                 <div className="text-center py-4 text-gray-500">
-                  No products found
+                  {showOnlyAvailableProducts ? 'No available products found' : 'No products found'}
                 </div>
               )}
             </CardContent>
