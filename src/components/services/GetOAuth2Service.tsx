@@ -80,57 +80,68 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
   const setupRealtime = () => {
     if (channelRef.current) supabase.removeChannel(channelRef.current);
 
+    const handlePayload = (payload: any) => {
+      const rec = payload.new;
+      if (!rec) return;
+      if (rec.product_name !== PRODUCT_NAME) return;
+      if (rec.token !== token) return;
+
+      // For INSERT events we still respect start time; for UPDATEs we don't filter by timestamp
+      const isInsert = payload.eventType === 'INSERT';
+      if (isInsert && startIsoRef.current && rec.timestamp < startIsoRef.current) return;
+
+      const noteEmail = (rec.note || '').toString();
+      if (!noteEmail || !emailsSetRef.current.has(noteEmail)) return;
+
+      setRows((prev) => {
+        const idx = prev.findIndex((r) => r.email === noteEmail);
+        if (idx === -1) return prev;
+
+        const next = [...prev];
+        const r = { ...next[idx] };
+        const status = (rec.status || '').toString();
+
+        if (status === 'success') {
+          // response_data expected to be object with refresh_token & CLIENT_ID
+          let refreshToken = '';
+          let clientId = '';
+          try {
+            if (rec.response_data?.refresh_token) refreshToken = rec.response_data.refresh_token;
+            if (rec.response_data?.CLIENT_ID) clientId = rec.response_data.CLIENT_ID;
+            if ((!refreshToken || !clientId) && Array.isArray(rec.output_result) && rec.output_result[0]) {
+              const parts = (rec.output_result[0] as string).split('|');
+              if (parts.length >= 4) {
+                refreshToken = parts[2];
+                clientId = parts[3];
+              }
+            }
+          } catch (_) {}
+
+          r.status = 'success';
+          r.refreshToken = refreshToken;
+          r.clientId = clientId;
+          r.resultText = Array.isArray(rec.output_result) ? rec.output_result[0] : undefined;
+        } else if (status === 'fail') {
+          r.status = 'fail';
+          r.resultText = Array.isArray(rec.output_result) ? rec.output_result[0] : undefined;
+        }
+
+        next[idx] = r;
+        return next;
+      });
+    };
+
     const channel = supabase
       .channel('oauth2-transactions')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'transactions' },
-        (payload: any) => {
-          const rec = payload.new;
-          if (!rec) return;
-          if (rec.product_name !== PRODUCT_NAME) return;
-          if (rec.token !== token) return;
-          if (startIsoRef.current && rec.timestamp < startIsoRef.current) return;
-
-          const noteEmail = (rec.note || '').toString();
-          if (!noteEmail || !emailsSetRef.current.has(noteEmail)) return;
-
-          setRows((prev) => {
-            const idx = prev.findIndex((r) => r.email === noteEmail);
-            if (idx === -1) return prev;
-
-            const next = [...prev];
-            const r = { ...next[idx] };
-            const status = (rec.status || '').toString();
-
-            if (status === 'success') {
-              // response_data expected to be object with refresh_token & CLIENT_ID
-              let refreshToken = '';
-              let clientId = '';
-              try {
-                if (rec.response_data?.refresh_token) refreshToken = rec.response_data.refresh_token;
-                if (rec.response_data?.CLIENT_ID) clientId = rec.response_data.CLIENT_ID;
-                if ((!refreshToken || !clientId) && Array.isArray(rec.output_result) && rec.output_result[0]) {
-                  const parts = (rec.output_result[0] as string).split('|');
-                  if (parts.length >= 4) {
-                    refreshToken = parts[2];
-                    clientId = parts[3];
-                  }
-                }
-              } catch (_) {}
-
-              r.status = 'success';
-              r.refreshToken = refreshToken;
-              r.clientId = clientId;
-              r.resultText = Array.isArray(rec.output_result) ? rec.output_result[0] : undefined;
-            } else if (status === 'fail') {
-              r.status = 'fail';
-            }
-
-            next[idx] = r;
-            return next;
-          });
-        }
+        handlePayload
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'transactions' },
+        handlePayload
       )
       .subscribe();
 
@@ -224,6 +235,131 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
     }
   };
 
+  // Helpers to parse parts from result text if needed
+  const parseSuccessParts = (resultText?: string) => {
+    if (!resultText) return { email: '', pass: '', refresh: '', client: '' };
+    const parts = resultText.split('|');
+    return {
+      email: parts[0] || '',
+      pass: parts[1] || '',
+      refresh: parts[2] || '',
+      client: parts[3] || '',
+    };
+  };
+
+  const parseFailParts = (resultText?: string) => {
+    if (!resultText) return { email: '', pass: '' };
+    const beforeMsg = resultText.split(' Account error')[0] || resultText;
+    const parts = beforeMsg.split('|');
+    return { email: parts[0] || '', pass: parts[1] || '' };
+  };
+
+  const exportText = (filename: string, lines: string[]) => {
+    const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportSuccessToTxt = () => {
+    const lines = rows
+      .filter((r) => r.status === 'success')
+      .map((r) => {
+        let refresh = r.refreshToken || '';
+        let client = r.clientId || '';
+        let email = r.email;
+        let pass = r.pass;
+        if (!refresh || !client || !pass) {
+          const p = parseSuccessParts(r.resultText);
+          refresh = refresh || p.refresh;
+          client = client || p.client;
+          pass = pass || p.pass;
+          email = email || p.email;
+        }
+        return `${email}|${pass}|${refresh}|${client}|`;
+      });
+    exportText('export-success.txt', lines);
+  };
+
+  const exportFailToTxt = () => {
+    const lines = rows
+      .filter((r) => r.status === 'fail')
+      .map((r) => {
+        let email = r.email;
+        let pass = r.pass;
+        if (!pass) {
+          const p = parseFailParts(r.resultText);
+          pass = pass || p.pass;
+          email = email || p.email;
+        }
+        return `${email}|${pass}|Fail`;
+      });
+    exportText('export-fail.txt', lines);
+  };
+
+  const loadHistory = async () => {
+    if (!token.trim()) {
+      toast({ title: 'Error', description: 'Please enter your authorization token', variant: 'destructive' });
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('note,status,output_result,response_data,timestamp,product_name')
+        .eq('token', token.trim())
+        .eq('product_name', PRODUCT_NAME)
+        .order('timestamp', { ascending: true });
+      if (error) throw error;
+
+      const mapped: RowItem[] = (data || []).map((rec: any, i: number) => {
+        const status = (rec.status || 'pending') as RowStatus;
+        const resultText = Array.isArray(rec.output_result) ? rec.output_result[0] : undefined;
+        let refreshToken = '';
+        let clientId = '';
+        if (rec.response_data?.refresh_token) refreshToken = rec.response_data.refresh_token;
+        if (rec.response_data?.CLIENT_ID) clientId = rec.response_data.CLIENT_ID;
+        if ((!refreshToken || !clientId) && resultText) {
+          const p = parseSuccessParts(resultText);
+          refreshToken = refreshToken || p.refresh;
+          clientId = clientId || p.client;
+        }
+
+        // Try to infer password from resultText if not available in DB
+        let inferredPass = '';
+        if (status === 'success') {
+          const p = parseSuccessParts(resultText);
+          inferredPass = p.pass;
+        } else if (status === 'fail') {
+          const p = parseFailParts(resultText);
+          inferredPass = p.pass;
+        }
+
+        return {
+          stt: i + 1,
+          email: (rec.note || '').toString(),
+          pass: inferredPass,
+          status,
+          refreshToken: refreshToken || undefined,
+          clientId: clientId || undefined,
+          resultText,
+        } as RowItem;
+      });
+
+      setRows(mapped);
+      setSubmitted(true);
+      emailsSetRef.current = new Set(mapped.map((m) => m.email));
+      // For history view, allow realtime updates regardless of timestamp filter
+      startIsoRef.current = '';
+      setupRealtime();
+      toast({ title: 'History loaded', description: `${mapped.length} transactions found for token.` });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err?.message || 'Failed to load history', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -285,6 +421,20 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
                 'Get OAuth2 Token'
               )}
             </Button>
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <Button type="button" variant="outline" onClick={loadHistory} disabled={!token.trim()}>
+                Load History
+              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={exportSuccessToTxt} disabled={!rows.length}>
+                  Export Success
+                </Button>
+                <Button type="button" variant="outline" onClick={exportFailToTxt} disabled={!rows.length}>
+                  Export Fail
+                </Button>
+              </div>
+            </div>
           </form>
 
           {/* API Documentation */}
