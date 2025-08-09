@@ -27,3 +27,6 @@ verify_jwt = false
 
 [functions.invite-capcut-pro]
 verify_jwt = false
+
+[functions.get-oauth2-token]
+verify_jwt = false
