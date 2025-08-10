@@ -14,8 +14,8 @@ serve(async (req) => {
   }
 
   try {
-    const { product_name, token, qty } = await req.json();
-    console.log('Processing request:', { product_name, token, qty });
+    const { product_name, token, qty, use_master_token } = await req.json();
+    console.log('Processing request:', { product_name, token, qty, use_master_token });
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -51,23 +51,12 @@ serve(async (req) => {
       );
     }
 
-    // Check token type and credits
+    // Check token type and credits based on use_master_token flag
     let tokenData;
     let isMasterToken = false;
     let requiredCredits = qty;
 
-    // First, try to find in regular tokens table
-    const { data: regularToken, error: regularTokenError } = await supabase
-      .from('tokens')
-      .select('*')
-      .eq('token', token)
-      .eq('product_id', product.id)
-      .maybeSingle();
-
-    if (regularToken) {
-      tokenData = regularToken;
-      console.log('Using regular token');
-    } else {
+    if (use_master_token) {
       // Try to find in master tokens table
       const { data: masterToken, error: masterTokenError } = await supabase
         .from('tokens_master')
@@ -81,7 +70,29 @@ serve(async (req) => {
         requiredCredits = qty * product.value; // Calculate credits based on product value
         console.log('Using master token, required credits:', requiredCredits);
       } else {
-        console.error('Token not found in either table');
+        console.error('Master token not found');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: "Master token not found. Please verify your token is correct." 
+          }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      // Try to find in regular tokens table
+      const { data: regularToken, error: regularTokenError } = await supabase
+        .from('tokens')
+        .select('*')
+        .eq('token', token)
+        .eq('product_id', product.id)
+        .maybeSingle();
+
+      if (regularToken) {
+        tokenData = regularToken;
+        console.log('Using regular token');
+      } else {
+        console.error('Regular token not found');
         return new Response(
           JSON.stringify({ 
             success: false, 
@@ -415,7 +426,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: status === 'success', 
         message: status === 'success' 
-          ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${tokenData.credits - qty}`
+          ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${tokenData.credits - requiredCredits}`
           : "Request processed but failed",
         api_response: filteredResponse,
         transaction_id: transactionData?.id || null

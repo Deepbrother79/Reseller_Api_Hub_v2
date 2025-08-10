@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -21,8 +20,8 @@ serve(async (req) => {
   }
 
   try {
-    const { transaction_ids, email_strings, token } = await req.json();
-    console.log('Processing inbox request:', { transaction_ids, email_strings, token: token ? '[PROVIDED]' : '[NOT PROVIDED]' });
+    const { transaction_ids, email_strings, token, use_master_token } = await req.json();
+    console.log('Processing inbox request:', { transaction_ids, email_strings, token: token ? '[PROVIDED]' : '[NOT PROVIDED]', use_master_token });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -132,7 +131,7 @@ serve(async (req) => {
       // Verify token for EMAIL-INBOX-READER product
       const { data: product, error: productError } = await supabase
         .from('products')
-        .select('id')
+        .select('id, value')
         .eq('name', EMAIL_STRINGS_PRODUCT_NAME)
         .eq('product_type', 'digital')
         .single();
@@ -148,30 +147,63 @@ serve(async (req) => {
         );
       }
 
-      const { data: tokenData, error: tokenError } = await supabase
-        .from('tokens')
-        .select('*')
-        .eq('token', token)
-        .eq('product_id', product.id)
-        .single();
+      // Validate token based on master token flag
+      let tokenData;
+      let isMasterToken = false;
+      const emailStringsCount = email_strings.length;
+      let requiredCredits = emailStringsCount;
 
-      if (tokenError || !tokenData) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: `Invalid Token: Token not found or not authorized for ${EMAIL_STRINGS_PRODUCT_NAME} product. Please verify your token is correct and valid.`,
-            error_type: "invalid_token"
-          }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      if (use_master_token) {
+        // Try master token table
+        const { data: masterToken, error: masterTokenError } = await supabase
+          .from('tokens_master')
+          .select('*')
+          .eq('token', token)
+          .single();
+
+        if (masterToken) {
+          tokenData = masterToken;
+          isMasterToken = true;
+          requiredCredits = emailStringsCount * (product.value || 1);
+          console.log('Using master token, required credits:', requiredCredits);
+        } else {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: 'Master token not found. Please verify your token is correct.',
+              error_type: 'invalid_token'
+            }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else {
+        // Try regular token table
+        const { data: regularToken, error: regularTokenError } = await supabase
+          .from('tokens')
+          .select('*')
+          .eq('token', token)
+          .eq('product_id', product.id)
+          .single();
+
+        if (regularToken) {
+          tokenData = regularToken;
+        } else {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: `Invalid Token: Token not found or not authorized for ${EMAIL_STRINGS_PRODUCT_NAME} product. Please verify your token is correct and valid.`,
+              error_type: 'invalid_token'
+            }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
 
-      const emailStringsCount = email_strings.length;
-      if (tokenData.credits < emailStringsCount) {
+      if (tokenData.credits < requiredCredits) {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: `Insufficient credits for ${EMAIL_STRINGS_PRODUCT_NAME}. Available: ${tokenData.credits}, Required: ${emailStringsCount}`,
+            message: `Insufficient credits for ${EMAIL_STRINGS_PRODUCT_NAME}. Available: ${tokenData.credits}, Required: ${requiredCredits}`,
             error_type: "insufficient_credits"
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -211,9 +243,12 @@ serve(async (req) => {
 
       // Update credits only for successfully processed emails
       if (processedCount > 0) {
+        const tableName = isMasterToken ? 'tokens_master' : 'tokens';
+        const finalRequiredCredits = isMasterToken ? processedCount * (product.value || 1) : processedCount;
+        
         const { error: updateError } = await supabase
-          .from('tokens')
-          .update({ credits: tokenData.credits - processedCount })
+          .from(tableName)
+          .update({ credits: tokenData.credits - finalRequiredCredits })
           .eq('token', token);
 
         if (updateError) {

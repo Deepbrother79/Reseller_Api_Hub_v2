@@ -254,6 +254,7 @@ useEffect(() => {
           token: token.trim(),
           email_passwords: inputText,
           remove_duplicates: removeDup,
+          use_master_token: useMasterToken,
         }
       });
 
@@ -291,6 +292,7 @@ useEffect(() => {
       token: token.trim(),
       email_passwords: inputText,
       remove_duplicates: removeDup,
+      use_master_token: useMasterToken,
     }, null, 2);
   };
 

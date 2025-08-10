@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -75,7 +76,7 @@ async function fetchWithTimeout(email, password) {
 }
 
 // Funzione per processare una singola credenziale
-async function processCredential(item, itemIndex, token, product, supabase) {
+async function processCredential(item, itemIndex, token, product, supabase, isMasterToken = false) {
   const { email, password } = item;
   try {
     console.log(`Processing credential ${itemIndex + 1}: ${email}`);
@@ -186,6 +187,7 @@ serve(async (req)=>{
     const single = (body.email_password ?? '').toString();
     const multi = (body.email_passwords ?? '').toString();
     const removeDuplicates = Boolean(body.remove_duplicates);
+    const useMasterToken = Boolean(body.use_master_token);
     
     if (!token) {
       return new Response(JSON.stringify({
@@ -263,26 +265,58 @@ serve(async (req)=>{
       });
     }
     
-    // Validate token and credits
-    const { data: tokenData, error: tokenError } = await supabase.from('tokens').select('*').eq('token', token).eq('product_id', product.id).single();
-    if (tokenError || !tokenData) {
-      return new Response(JSON.stringify({
-        success: false,
-        message: 'Invalid Token: Token not found or not authorized for GET-OAUTH2-TOKEN product. Please verify your token is correct and valid.',
-        error_type: 'invalid_token'
-      }), {
-        status: 401,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      });
+    // Validate token and credits based on master token flag
+    let tokenData;
+    let isMasterToken = false;
+    let requiredCredits = items.length;
+
+    if (useMasterToken) {
+      // Try master token table first
+      const { data: masterToken, error: masterTokenError } = await supabase.from('tokens_master').select('*').eq('token', token).single();
+      if (masterToken) {
+        tokenData = masterToken;
+        isMasterToken = true;
+        // For master tokens, we need to get the product value to calculate credits
+        const { data: productData } = await supabase.from('products').select('value').eq('id', product.id).single();
+        requiredCredits = items.length * (productData?.value || 1);
+        console.log('Using master token, required credits:', requiredCredits);
+      } else {
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'Master token not found. Please verify your token is correct.',
+          error_type: 'invalid_token'
+        }), {
+          status: 401,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+    } else {
+      // Try regular token table
+      const { data: regularToken, error: regularTokenError } = await supabase.from('tokens').select('*').eq('token', token).eq('product_id', product.id).single();
+      if (regularToken) {
+        tokenData = regularToken;
+      } else {
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'Invalid Token: Token not found or not authorized for GET-OAUTH2-TOKEN product. Please verify your token is correct and valid.',
+          error_type: 'invalid_token'
+        }), {
+          status: 401,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
     }
     
-    if ((tokenData.credits ?? 0) < items.length) {
+    if ((tokenData.credits ?? 0) < requiredCredits) {
       return new Response(JSON.stringify({
         success: false,
-        message: `Insufficient credits for GET-OAUTH2-TOKEN. Available: ${tokenData.credits}, Required: ${items.length}`,
+        message: `Insufficient credits for GET-OAUTH2-TOKEN. Available: ${tokenData.credits}, Required: ${requiredCredits}`,
         error_type: 'insufficient_credits'
       }), {
         status: 400,
@@ -293,9 +327,10 @@ serve(async (req)=>{
       });
     }
     
-    // Deduct credits upfront equal to number of items
-    const { error: deductError } = await supabase.from('tokens').update({
-      credits: tokenData.credits - items.length
+    // Deduct credits upfront equal to required credits
+    const tableName = isMasterToken ? 'tokens_master' : 'tokens';
+    const { error: deductError } = await supabase.from(tableName).update({
+      credits: tokenData.credits - requiredCredits
     }).eq('token', token);
     if (deductError) {
       console.error('Failed to deduct credits:', deductError);
@@ -309,7 +344,7 @@ serve(async (req)=>{
       for(let i = 0; i < items.length; i += concurrency){
         const batch = items.slice(i, i + concurrency);
         console.log(`Processing batch ${Math.floor(i / concurrency) + 1}, items ${i + 1} to ${Math.min(i + concurrency, items.length)}`);
-        const batchPromises = batch.map((item, batchIndex)=>processCredential(item, i + batchIndex, token, product, supabase));
+        const batchPromises = batch.map((item, batchIndex)=>processCredential(item, i + batchIndex, token, product, supabase, isMasterToken));
         const batchResults = await Promise.allSettled(batchPromises);
         
         // Aggiungi i risultati mantenendo l'ordine
