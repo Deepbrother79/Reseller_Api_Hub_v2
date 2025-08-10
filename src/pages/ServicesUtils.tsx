@@ -25,6 +25,7 @@ const ServicesUtils = () => {
   const [transactionIds, setTransactionIds] = useState('');
   const [emailStrings, setEmailStrings] = useState('');
   const [token, setToken] = useState('');
+  const [useMasterTokenInbox, setUseMasterTokenInbox] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<EmailResult[]>([]);
   const [useTransactionIds, setUseTransactionIds] = useState(true);
@@ -107,7 +108,8 @@ const ServicesUtils = () => {
         email_strings: useEmailStrings && emailStrings.trim() 
           ? emailStrings.split('\n').filter(str => str.trim()) 
           : [],
-        token: useEmailStrings && token.trim() ? token.trim() : null
+        token: useEmailStrings && token.trim() ? token.trim() : null,
+        use_master_token: useEmailStrings && token.trim() ? useMasterTokenInbox : undefined
       };
 
       console.log('Sending request:', requestData);
@@ -238,6 +240,8 @@ const ServicesUtils = () => {
             setEmailStrings={setEmailStrings}
             token={token}
             setToken={setToken}
+            useMasterToken={useMasterTokenInbox}
+            setUseMasterToken={setUseMasterTokenInbox}
             loading={loading}
             results={results}
             useTransactionIds={useTransactionIds}

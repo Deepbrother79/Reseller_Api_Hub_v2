@@ -52,6 +52,7 @@ const Index = () => {
   const [fullProducts, setFullProducts] = useState<FullProduct[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [token, setToken] = useState('');
+  const [useMasterToken, setUseMasterToken] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [loading, setLoading] = useState(false);
   const [apiResult, setApiResult] = useState<any>(null);
@@ -276,7 +277,8 @@ const Index = () => {
     return JSON.stringify({
       product_name: productName,
       token: token,
-      qty: parseInt(quantity)
+      qty: parseInt(quantity),
+      use_master_token: useMasterToken
     });
   };
 
@@ -324,7 +326,8 @@ const Index = () => {
         body: JSON.stringify({
           product_name: productName,
           token: token,
-          qty: parseInt(quantity)
+          qty: parseInt(quantity),
+          use_master_token: useMasterToken
         })
       });
 
@@ -488,6 +491,8 @@ const Index = () => {
             apiResult={apiResult}
             baseUrl={baseUrl}
             updatedProductIds={updatedProductIds}
+            useMasterToken={useMasterToken}
+            setUseMasterToken={setUseMasterToken}
           />
 
           <HistoryForm

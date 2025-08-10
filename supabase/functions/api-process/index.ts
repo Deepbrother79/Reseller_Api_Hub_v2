@@ -14,18 +14,20 @@ serve(async (req) => {
   }
 
   try {
-    let product_name, token, qty;
+    let product_name, token, qty, use_master_token;
 
     if (req.method === 'GET') {
       const url = new URL(req.url);
       product_name = url.searchParams.get('product_name') || url.searchParams.get('product');
       token = url.searchParams.get('token');
       qty = parseInt(url.searchParams.get('qty') || '0');
+      use_master_token = url.searchParams.get('use_master_token') === 'true';
     } else if (req.method === 'POST') {
       const body = await req.json();
       product_name = body.product_name || body.product;
       token = body.token;
       qty = parseInt(body.qty || '0');
+      use_master_token = Boolean(body.use_master_token);
     } else {
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
@@ -53,11 +55,12 @@ serve(async (req) => {
         'Authorization': `Bearer ${supabaseKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        product_name: product_name,
-        token: token,
-        qty: qty
-      })
+        body: JSON.stringify({
+          product_name: product_name,
+          token: token,
+          qty: qty,
+          use_master_token
+        })
     });
 
     const data = await response.json();

@@ -9,6 +9,7 @@ interface ApiEndpointsCardProps {
   transactionIds: string;
   emailStrings: string;
   token: string;
+  useMasterToken: boolean;
   onCopy: (text: string) => void;
 }
 
@@ -17,6 +18,7 @@ const ApiEndpointsCard: React.FC<ApiEndpointsCardProps> = ({
   transactionIds,
   emailStrings,
   token,
+  useMasterToken,
   onCopy
 }) => {
   const generateReadInboxUrl = () => {
@@ -29,7 +31,8 @@ const ApiEndpointsCard: React.FC<ApiEndpointsCardProps> = ({
     const body = {
       transaction_ids: transactionIds.trim() ? transactionIds.split('\n').filter(id => id.trim()) : [],
       email_strings: emailStrings.trim() ? emailStrings.split('\n').filter(str => str.trim()) : [],
-      token: token.trim() || null
+      token: token.trim() || null,
+      ...(token.trim() ? { use_master_token: useMasterToken } : {})
     };
     
     return JSON.stringify(body, null, 2);

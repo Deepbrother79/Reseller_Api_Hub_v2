@@ -21,6 +21,8 @@ interface ReadInboxServiceProps {
   setEmailStrings: (value: string) => void;
   token: string;
   setToken: (value: string) => void;
+  useMasterToken: boolean;
+  setUseMasterToken: (v: boolean) => void;
   loading: boolean;
   results: EmailResult[];
   useTransactionIds: boolean;
@@ -38,6 +40,8 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
   setEmailStrings,
   token,
   setToken,
+  useMasterToken,
+  setUseMasterToken,
   loading,
   results,
   useTransactionIds,
@@ -98,6 +102,8 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
             useEmailStrings={useEmailStrings}
             setUseEmailStrings={handleUseEmailStrings}
             onSubmit={onSubmit}
+            useMasterToken={useMasterToken}
+            setUseMasterToken={setUseMasterToken}
           />
         </CardContent>
       </Card>
@@ -107,6 +113,7 @@ const ReadInboxService: React.FC<ReadInboxServiceProps> = ({
         transactionIds={transactionIds}
         emailStrings={emailStrings}
         token={token}
+        useMasterToken={useMasterToken}
         onCopy={onCopy}
       />
 

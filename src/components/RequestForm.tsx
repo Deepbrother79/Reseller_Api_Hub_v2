@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Copy } from "lucide-react";
 import ProductTooltip from './ProductTooltip';
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Product {
   id: string;
@@ -33,6 +34,8 @@ interface RequestFormProps {
   apiResult: any;
   baseUrl: string;
   updatedProductIds?: Set<string>;
+  useMasterToken: boolean;
+  setUseMasterToken: (v: boolean) => void;
 }
 
 const RequestForm: React.FC<RequestFormProps> = ({
@@ -50,7 +53,9 @@ const RequestForm: React.FC<RequestFormProps> = ({
   generateProcessRequestBody,
   apiResult,
   baseUrl,
-  updatedProductIds = new Set()
+  updatedProductIds = new Set(),
+  useMasterToken,
+  setUseMasterToken
 }) => {
   const selectedProductData = products.find(p => p.id === selectedProduct);
 
@@ -152,6 +157,10 @@ const RequestForm: React.FC<RequestFormProps> = ({
               value={token}
               onChange={(e) => onTokenChange(e.target.value)}
             />
+            <div className="flex items-center gap-2 pt-1">
+              <Checkbox id="use-master" checked={useMasterToken} onCheckedChange={(v) => setUseMasterToken(Boolean(v))} />
+              <Label htmlFor="use-master" className="text-sm">Use Master Token</Label>
+            </div>
           </div>
 
           <div className="space-y-2">

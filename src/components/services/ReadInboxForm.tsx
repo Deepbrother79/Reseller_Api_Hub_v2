@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Mail } from "lucide-react";
 
+
 interface ReadInboxFormProps {
   transactionIds: string;
   setTransactionIds: (value: string) => void;
@@ -21,6 +22,8 @@ interface ReadInboxFormProps {
   useEmailStrings: boolean;
   setUseEmailStrings: (value: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
+  useMasterToken: boolean;
+  setUseMasterToken: (v: boolean) => void;
 }
 
 const ReadInboxForm: React.FC<ReadInboxFormProps> = ({
@@ -35,7 +38,9 @@ const ReadInboxForm: React.FC<ReadInboxFormProps> = ({
   setUseTransactionIds,
   useEmailStrings,
   setUseEmailStrings,
-  onSubmit
+  onSubmit,
+  useMasterToken,
+  setUseMasterToken
 }) => {
   return (
     <Card>
@@ -107,6 +112,10 @@ const ReadInboxForm: React.FC<ReadInboxFormProps> = ({
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
               />
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox id="use-master-inbox" checked={useMasterToken} onCheckedChange={(v) => setUseMasterToken(Boolean(v))} />
+                <Label htmlFor="use-master-inbox" className="text-sm">Use Master Token</Label>
+              </div>
             </div>
           )}
 

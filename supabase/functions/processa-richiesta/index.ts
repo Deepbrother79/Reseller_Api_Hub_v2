@@ -374,6 +374,21 @@ serve(async (req) => {
       }
     }
 
+    // Ensure FK compatibility when using master token by creating a shadow token if missing
+    if (isMasterToken) {
+      const { data: existingTok } = await supabase
+        .from('tokens')
+        .select('token')
+        .eq('token', token)
+        .maybeSingle();
+      if (!existingTok) {
+        const { error: insertShadowErr } = await supabase
+          .from('tokens')
+          .insert({ token, product_id: product.id, name: 'MASTER-LINK', credits: 0 });
+        if (insertShadowErr) console.error('Failed to insert shadow token for FK:', insertShadowErr);
+      }
+    }
+
     // Create transaction record with product_name
     const { data: transactionData, error: transactionError } = await supabase
       .from('transactions')
