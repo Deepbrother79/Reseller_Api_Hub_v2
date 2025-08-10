@@ -61,6 +61,7 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
   const [inputText, setInputText] = useState('');
   const [token, setToken] = useState('');
   const [removeDup, setRemoveDup] = useState(false);
+  const [useMasterToken, setUseMasterToken] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<RowItem[]>([]);
   const [submitted, setSubmitted] = useState(false);
@@ -68,12 +69,14 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const startIsoRef = useRef<string>('');
   const emailsSetRef = useRef<Set<string>>(new Set());
+  const pollRef = useRef<number | null>(null);
 
   const parsedPreview = useMemo(() => parseLines(inputText), [inputText]);
 
-  useEffect(() => {
+useEffect(() => {
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current);
+      if (pollRef.current) window.clearInterval(pollRef.current);
     };
   }, []);
 
@@ -86,9 +89,7 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
       if (rec.product_name !== PRODUCT_NAME) return;
       if (rec.token !== token) return;
 
-      // For INSERT events we still respect start time; for UPDATEs we don't filter by timestamp
-      const isInsert = payload.eventType === 'INSERT';
-      if (isInsert && startIsoRef.current && rec.timestamp < startIsoRef.current) return;
+// Do not filter by timestamp to avoid missing late DB events
 
       const noteEmail = (rec.note || '').toString();
       if (!noteEmail || !emailsSetRef.current.has(noteEmail)) return;
@@ -106,10 +107,11 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
           let refreshToken = '';
           let clientId = '';
           try {
-            if (rec.response_data?.refresh_token) refreshToken = rec.response_data.refresh_token;
-            if (rec.response_data?.CLIENT_ID) clientId = rec.response_data.CLIENT_ID;
+            const rd: any = rec.response_data as any;
+            if (rd && typeof rd === 'object' && rd.refresh_token) refreshToken = String(rd.refresh_token);
+            if (rd && typeof rd === 'object' && rd.CLIENT_ID) clientId = String(rd.CLIENT_ID);
             if ((!refreshToken || !clientId) && Array.isArray(rec.output_result) && rec.output_result[0]) {
-              const parts = (rec.output_result[0] as string).split('|');
+              const parts = String(rec.output_result[0]).split('|');
               if (parts.length >= 4) {
                 refreshToken = parts[2];
                 clientId = parts[3];
@@ -120,10 +122,10 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
           r.status = 'success';
           r.refreshToken = refreshToken;
           r.clientId = clientId;
-          r.resultText = Array.isArray(rec.output_result) ? rec.output_result[0] : undefined;
+          r.resultText = Array.isArray(rec.output_result) ? String(rec.output_result[0]) : undefined;
         } else if (status === 'fail') {
           r.status = 'fail';
-          r.resultText = Array.isArray(rec.output_result) ? rec.output_result[0] : undefined;
+          r.resultText = Array.isArray(rec.output_result) ? String(rec.output_result[0]) : undefined;
         }
 
         next[idx] = r;
@@ -146,6 +148,72 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
       .subscribe();
 
     channelRef.current = channel;
+  };
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      window.clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
+
+  const startPolling = () => {
+    stopPolling();
+    const deadline = Date.now() + 180000; // up to 3 minutes
+    pollRef.current = window.setInterval(async () => {
+      if (Date.now() > deadline) {
+        stopPolling();
+        return;
+      }
+      const emails = Array.from(emailsSetRef.current);
+      if (!emails.length) return;
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('note,status,output_result,response_data')
+        .eq('token', token.trim())
+        .eq('product_name', PRODUCT_NAME)
+        .in('note', emails);
+      if (error || !data) return;
+
+      setRows((prev) => {
+        const map = new Map(prev.map((r) => [r.email, { ...r }]));
+        for (const rec of data) {
+          const email = (rec.note || '').toString();
+          const r = map.get(email);
+          if (!r) continue;
+          const status = (rec.status || '').toString();
+          if (status === 'success') {
+            let refreshToken = '';
+            let clientId = '';
+            try {
+              const rd: any = rec.response_data as any;
+              if (rd && typeof rd === 'object' && rd.refresh_token) refreshToken = String(rd.refresh_token);
+              if (rd && typeof rd === 'object' && rd.CLIENT_ID) clientId = String(rd.CLIENT_ID);
+              const rt = Array.isArray(rec.output_result) ? String(rec.output_result[0]) : undefined;
+              if ((!refreshToken || !clientId) && rt) {
+                const parts = rt.split('|');
+                if (parts.length >= 4) {
+                  refreshToken = parts[2];
+                  clientId = parts[3];
+                }
+              }
+            } catch {}
+            r.status = 'success';
+            r.refreshToken = refreshToken;
+            r.clientId = clientId;
+            r.resultText = Array.isArray(rec.output_result) ? String(rec.output_result[0]) : undefined;
+          } else if (status === 'fail') {
+            r.status = 'fail';
+            r.resultText = Array.isArray(rec.output_result) ? String(rec.output_result[0]) : undefined;
+          }
+          map.set(email, r);
+        }
+        const next = Array.from(map.values());
+        const done = next.every((x) => x.status !== 'pending');
+        if (done) stopPolling();
+        return next;
+      });
+    }, 3000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -177,6 +245,7 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
     emailsSetRef.current = new Set(filtered.map((c) => c.email));
     startIsoRef.current = new Date().toISOString();
     setupRealtime();
+    startPolling();
 
     setLoading(true);
     try {
@@ -409,6 +478,10 @@ const GetOAuth2Service: React.FC<GetOAuth2ServiceProps> = ({ onCopy }) => {
                 onChange={(e) => setToken(e.target.value)}
                 className="font-mono text-sm"
               />
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox id="useMaster" checked={useMasterToken} onCheckedChange={(v) => setUseMasterToken(Boolean(v))} />
+                <Label htmlFor="useMaster" className="text-sm">Use Master Token</Label>
+              </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
