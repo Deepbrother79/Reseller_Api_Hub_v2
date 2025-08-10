@@ -255,21 +255,6 @@ serve(async (req) => {
           console.error('Failed to update credits:', updateError);
         }
 
-        // Create a shadow token in tokens table when using master token to satisfy FK
-        if (isMasterToken) {
-          const { data: existingTok } = await supabase
-            .from('tokens')
-            .select('token')
-            .eq('token', token)
-            .maybeSingle();
-          if (!existingTok) {
-            const { error: insertShadowErr } = await supabase
-              .from('tokens')
-              .insert({ token, product_id: product.id, name: 'MASTER-LINK', credits: 0 });
-            if (insertShadowErr) console.error('Failed to insert shadow token for FK:', insertShadowErr);
-          }
-        }
-
         const { error: transactionError } = await supabase
           .from('transactions')
           .insert({
