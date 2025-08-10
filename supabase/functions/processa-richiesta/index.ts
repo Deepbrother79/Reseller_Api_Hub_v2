@@ -67,8 +67,9 @@ serve(async (req) => {
       if (masterToken) {
         tokenData = masterToken;
         isMasterToken = true;
-        requiredCredits = qty * product.value; // Calculate credits based on product value
-        console.log('Using master token, required credits:', requiredCredits);
+        // For master tokens: credits are in USD, so calculate based on product.value * qty
+        requiredCredits = qty * (product.value || 1);
+        console.log('Using master token, required credits:', requiredCredits, 'USD (product.value:', product.value, 'x qty:', qty, ')');
       } else {
         console.error('Master token not found');
         return new Response(
@@ -374,21 +375,6 @@ serve(async (req) => {
       }
     }
 
-    // Ensure FK compatibility when using master token by creating a shadow token if missing
-    if (isMasterToken) {
-      const { data: existingTok } = await supabase
-        .from('tokens')
-        .select('token')
-        .eq('token', token)
-        .maybeSingle();
-      if (!existingTok) {
-        const { error: insertShadowErr } = await supabase
-          .from('tokens')
-          .insert({ token, product_id: product.id, name: 'MASTER-LINK', credits: 0 });
-        if (insertShadowErr) console.error('Failed to insert shadow token for FK:', insertShadowErr);
-      }
-    }
-
     // Create transaction record with product_name
     const { data: transactionData, error: transactionError } = await supabase
       .from('transactions')
@@ -418,7 +404,11 @@ serve(async (req) => {
     // Update token credits only if successful
     if (status === 'success') {
       const tableName = isMasterToken ? 'tokens_master' : 'tokens';
-      const newCredits = tokenData.credits - requiredCredits;
+      const newCredits = isMasterToken 
+        ? (tokenData.credits as number) - requiredCredits  // Master tokens use numeric credits
+        : tokenData.credits - requiredCredits;            // Regular tokens use integer credits
+      
+      console.log(`Updating credits in ${tableName}: ${tokenData.credits} - ${requiredCredits} = ${newCredits}`);
       
       const { error: updateError } = await supabase
         .from(tableName)
@@ -441,7 +431,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: status === 'success', 
         message: status === 'success' 
-          ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${tokenData.credits - requiredCredits}`
+          ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${isMasterToken ? (tokenData.credits as number) - requiredCredits : tokenData.credits - requiredCredits}${isMasterToken ? ' USD' : ''}`
           : "Request processed but failed",
         api_response: filteredResponse,
         transaction_id: transactionData?.id || null
