@@ -89,20 +89,6 @@ async function processCredential(item, itemIndex, token, product, supabase, isMa
         CLIENT_ID,
         Result: resultText
       };
-      // Ensure FK compatibility when using master token by creating a shadow token if missing
-      if (isMasterToken) {
-        const { data: existingTok } = await supabase
-          .from('tokens')
-          .select('token')
-          .eq('token', token)
-          .maybeSingle();
-        if (!existingTok) {
-          const { error: insertShadowErr } = await supabase
-            .from('tokens')
-            .insert({ token, product_id: product.id, name: 'MASTER-LINK', credits: 0 });
-          if (insertShadowErr) console.error('Failed to insert shadow token for FK:', insertShadowErr);
-        }
-      }
       // Insert transaction success
       const { error: txErr } = await supabase.from('transactions').insert({
         token,
@@ -128,20 +114,6 @@ async function processCredential(item, itemIndex, token, product, supabase, isMa
       const message = resp.data?.message || resp.data?.error_description || resp.data?.error || resp.rawText || 'Request failed';
       const visibleMsg = typeof message === 'string' ? message : JSON.stringify(message);
       const combined = `${email}|${password} ${visibleMsg}`;
-      // Ensure FK compatibility when using master token by creating a shadow token if missing
-      if (isMasterToken) {
-        const { data: existingTok } = await supabase
-          .from('tokens')
-          .select('token')
-          .eq('token', token)
-          .maybeSingle();
-        if (!existingTok) {
-          const { error: insertShadowErr } = await supabase
-            .from('tokens')
-            .insert({ token, product_id: product.id, name: 'MASTER-LINK', credits: 0 });
-          if (insertShadowErr) console.error('Failed to insert shadow token for FK:', insertShadowErr);
-        }
-      }
       const { error: txErr } = await supabase.from('transactions').insert({
         token,
         product_id: product.id,
@@ -165,20 +137,6 @@ async function processCredential(item, itemIndex, token, product, supabase, isMa
     console.error(`Error processing ${email}:`, e);
     const msg = e?.message || 'Connection error';
     const combined = `${email}|${password} ${msg}`;
-    // Ensure FK compatibility when using master token by creating a shadow token if missing
-    if (isMasterToken) {
-      const { data: existingTok } = await supabase
-        .from('tokens')
-        .select('token')
-        .eq('token', token)
-        .maybeSingle();
-      if (!existingTok) {
-        const { error: insertShadowErr } = await supabase
-          .from('tokens')
-          .insert({ token, product_id: product.id, name: 'MASTER-LINK', credits: 0 });
-        if (insertShadowErr) console.error('Failed to insert shadow token for FK:', insertShadowErr);
-      }
-    }
     const { error: txErr } = await supabase.from('transactions').insert({
       token,
       product_id: product.id,
