@@ -1,14 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
-// Static client id required by the service response contract
-const CLIENT_ID = "8caf5ed3-088c-4fa5-b3a8-684e6f0d1616";
-const TARGET_URL = "https://getouthy2-54304885440.europe-west1.run.app";
+
+// Retrieve sensitive data from Supabase secrets
+const CLIENT_ID = Deno.env.get('CLIENT_ID');
+const TARGET_URL = Deno.env.get('TARGET_URL');
+
 const CONCURRENCY_LIMIT = 10;
 const REQUEST_TIMEOUT_MS = 75_000; // external API may take 25-50s per spec
+
 function parseLines(raw) {
   const lines = raw.split(/\r?\n/) // split by newline
   .map((l)=>l.trim()).filter(Boolean);
@@ -26,6 +30,7 @@ function parseLines(raw) {
   }
   return parsed;
 }
+
 function dedupeByEmail(items) {
   const seen = new Set();
   const out = [];
@@ -37,6 +42,7 @@ function dedupeByEmail(items) {
   }
   return out;
 }
+
 async function fetchWithTimeout(email, password) {
   const controller = new AbortController();
   const timeout = setTimeout(()=>controller.abort(), REQUEST_TIMEOUT_MS);
@@ -67,6 +73,7 @@ async function fetchWithTimeout(email, password) {
     clearTimeout(timeout);
   }
 }
+
 // Funzione per processare una singola credenziale
 async function processCredential(item, itemIndex, token, product, supabase) {
   const { email, password } = item;
@@ -149,18 +156,37 @@ async function processCredential(item, itemIndex, token, product, supabase) {
     };
   }
 }
+
 serve(async (req)=>{
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       headers: corsHeaders
     });
   }
+
   try {
+    // Check if required secrets are available
+    if (!CLIENT_ID || !TARGET_URL) {
+      console.error('Missing required secrets: CLIENT_ID or TARGET_URL');
+      return new Response(JSON.stringify({
+        success: false,
+        message: "Server configuration error: Missing required secrets",
+        error_type: "configuration_error"
+      }), {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
     const body = await req.json().catch(()=>({}));
     const token = body.token?.trim();
     const single = (body.email_password ?? '').toString();
     const multi = (body.email_passwords ?? '').toString();
     const removeDuplicates = Boolean(body.remove_duplicates);
+    
     if (!token) {
       return new Response(JSON.stringify({
         success: false,
@@ -174,6 +200,7 @@ serve(async (req)=>{
         }
       });
     }
+    
     // Build list of credentials
     let items = [];
     if (multi && multi.trim()) {
@@ -182,6 +209,7 @@ serve(async (req)=>{
       const parsed = parseLines(single);
       if (parsed.length) items = parsed.slice(0, 1);
     }
+    
     if (!items.length) {
       return new Response(JSON.stringify({
         success: false,
@@ -195,9 +223,11 @@ serve(async (req)=>{
         }
       });
     }
+    
     if (removeDuplicates) {
       items = dedupeByEmail(items);
     }
+    
     if (items.length > 100) {
       return new Response(JSON.stringify({
         success: false,
@@ -212,9 +242,11 @@ serve(async (req)=>{
         }
       });
     }
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
     // Resolve product
     const { data: product, error: productError } = await supabase.from('products').select('id').eq('name', 'GET-OAUTH2-TOKEN').eq('product_type', 'digital').single();
     if (productError || !product) {
@@ -230,6 +262,7 @@ serve(async (req)=>{
         }
       });
     }
+    
     // Validate token and credits
     const { data: tokenData, error: tokenError } = await supabase.from('tokens').select('*').eq('token', token).eq('product_id', product.id).single();
     if (tokenError || !tokenData) {
@@ -245,6 +278,7 @@ serve(async (req)=>{
         }
       });
     }
+    
     if ((tokenData.credits ?? 0) < items.length) {
       return new Response(JSON.stringify({
         success: false,
@@ -258,6 +292,7 @@ serve(async (req)=>{
         }
       });
     }
+    
     // Deduct credits upfront equal to number of items
     const { error: deductError } = await supabase.from('tokens').update({
       credits: tokenData.credits - items.length
@@ -265,7 +300,9 @@ serve(async (req)=>{
     if (deductError) {
       console.error('Failed to deduct credits:', deductError);
     }
+    
     console.log(`Processing ${items.length} credentials with ${Math.min(CONCURRENCY_LIMIT, items.length)} concurrent workers`);
+    
     // ✅ SOLUZIONE: Utilizziamo Promise.allSettled con controllo di concorrenza
     const processWithConcurrency = async (items, concurrency)=>{
       const results = [];
@@ -274,6 +311,7 @@ serve(async (req)=>{
         console.log(`Processing batch ${Math.floor(i / concurrency) + 1}, items ${i + 1} to ${Math.min(i + concurrency, items.length)}`);
         const batchPromises = batch.map((item, batchIndex)=>processCredential(item, i + batchIndex, token, product, supabase));
         const batchResults = await Promise.allSettled(batchPromises);
+        
         // Aggiungi i risultati mantenendo l'ordine
         batchResults.forEach((result, batchIndex)=>{
           if (result.status === 'fulfilled') {
@@ -287,6 +325,7 @@ serve(async (req)=>{
             };
           }
         });
+        
         // Pausa breve tra i batch per evitare overload
         if (i + concurrency < items.length) {
           await new Promise((resolve)=>setTimeout(resolve, 100));
@@ -294,8 +333,11 @@ serve(async (req)=>{
       }
       return results;
     };
+    
     const results = await processWithConcurrency(items, CONCURRENCY_LIMIT);
+    
     console.log(`Completed processing. Success: ${results.filter((r)=>r.status === 'success').length}, Failed: ${results.filter((r)=>r.status === 'fail').length}`);
+    
     return new Response(JSON.stringify({
       success: true,
       count: items.length,
