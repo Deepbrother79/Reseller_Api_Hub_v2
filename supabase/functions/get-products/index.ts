@@ -21,10 +21,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get all products
+    // Get all visible products
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('*')
+      .eq('visible', true)
       .order('name');
 
     if (productsError) {
