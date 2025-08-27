@@ -43,7 +43,7 @@ const ApiEndpointsPanel: React.FC<ApiEndpointsPanelProps> = ({
           
           <p><strong>Base URL:</strong></p>
           <code className="bg-white p-2 rounded block text-xs break-all">
-            {baseUrl}
+            https://api.accshub.org
           </code>
           
           <p className="mt-4"><strong>Available Endpoints:</strong></p>
@@ -65,7 +65,7 @@ const ApiEndpointsPanel: React.FC<ApiEndpointsPanelProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded">POST</span>
-              <code className="text-xs">/api-refund</code>
+              <code className="text-xs">/refund</code>
               <span className="text-xs text-gray-500">- Request refund</span>
             </div>
           </div>
