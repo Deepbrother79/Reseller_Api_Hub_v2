@@ -18,7 +18,7 @@ const RefundForm: React.FC<RefundFormProps> = ({ baseUrl, onCopyUrl }) => {
   const { toast } = useToast();
 
   const generateRefundUrl = () => {
-    return `${baseUrl}/api-refund`;
+    return `https://api.accshub.org/refund`;
   };
 
   const generateRefundBody = () => {
