@@ -73,7 +73,7 @@ const Index = () => {
   
   const { toast } = useToast();
 
-  const baseUrl = 'https://api.accshub.org';
+  const baseUrl = 'https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1';
 
   // Filter products based on selected category and subcategory
   const filteredProducts = products.filter(product => {
@@ -167,7 +167,7 @@ const Index = () => {
 
     const loadFullProducts = async () => {
       try {
-        const productsUrl = `${baseUrl}/items`;
+        const productsUrl = `${baseUrl}/api-items`;
         console.log('Loading full products from:', productsUrl);
         
         const response = await fetch(productsUrl);
@@ -267,7 +267,7 @@ const Index = () => {
     if (!selectedProduct || !token || !quantity) return '';
     const selectedProductData = products.find(p => p.id === selectedProduct);
     const productName = selectedProductData?.name || '';
-    return `${baseUrl}/process?product_name=${encodeURIComponent(productName)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
+    return `https://api.accshub.org/process?product_name=${encodeURIComponent(productName)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
   };
 
   const generateProcessRequestBody = () => {
@@ -284,20 +284,20 @@ const Index = () => {
 
   const generateHistoryUrl = () => {
     if (!historyToken) return '';
-    return `${baseUrl}/history?token=${encodeURIComponent(historyToken)}`;
+    return `https://api.accshub.org/history?token=${encodeURIComponent(historyToken)}`;
   };
 
   const generateCreditsUrl = () => {
     if (!historyToken) return '';
-    return `${baseUrl}/credits?token=${encodeURIComponent(historyToken)}`;
+    return `https://api.accshub.org/credits?token=${encodeURIComponent(historyToken)}`;
   };
 
   const generateProductsUrl = () => {
-    return `${baseUrl}/items`;
+    return `https://api.accshub.org/items`;
   };
 
   const generateRefundUrl = () => {
-    return `${baseUrl}/api-refund`;
+    return `https://api.accshub.org/api-refund`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -318,7 +318,7 @@ const Index = () => {
       const selectedProductData = products.find(p => p.id === selectedProduct);
       const productName = selectedProductData?.name || '';
 
-      const response = await fetch(`${baseUrl}/process`, {
+      const response = await fetch(`${baseUrl}/api-process`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -360,7 +360,7 @@ const Index = () => {
 
   const fetchCreditsForToken = async (tokenValue: string) => {
     try {
-      const response = await fetch(`${baseUrl}/credits?token=${encodeURIComponent(tokenValue)}`);
+      const response = await fetch(`${baseUrl}/api-credits?token=${encodeURIComponent(tokenValue)}`);
       const data = await response.json();
       
       console.log('Credits API response:', data);
@@ -405,7 +405,7 @@ const Index = () => {
       // Fetch credits first
       await fetchCreditsForToken(historyToken);
 
-      const response = await fetch(`${baseUrl}/history?token=${encodeURIComponent(historyToken)}`);
+      const response = await fetch(`${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`);
       const data = await response.json();
 
       if (data.success && data.transactions) {
