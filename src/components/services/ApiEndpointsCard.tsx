@@ -22,7 +22,7 @@ const ApiEndpointsCard: React.FC<ApiEndpointsCardProps> = ({
   onCopy
 }) => {
   const generateReadInboxUrl = () => {
-    return `${baseUrl}/read-inbox-mail`;
+    return `${baseUrl}/readinbox`;
   };
 
   const generateReadInboxBody = () => {

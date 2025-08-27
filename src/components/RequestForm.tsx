@@ -277,13 +277,13 @@ const RequestForm: React.FC<RequestFormProps> = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onCopyUrl(`${baseUrl}/api-process`)}
+                  onClick={() => onCopyUrl(`${baseUrl}/process`)}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
               <code className="text-xs bg-white p-2 rounded block break-all">
-                {baseUrl}/api-process
+                {baseUrl}/process
               </code>
             </div>
 

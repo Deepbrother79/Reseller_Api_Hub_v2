@@ -282,8 +282,8 @@ useEffect(() => {
   };
 
   const generateApiUrl = () => {
-    const baseUrl = 'https://vvtnzixsxfjzwhjetrfm.supabase.co/functions/v1';
-    return `${baseUrl}/get-oauth2-token`;
+    const baseUrl = 'https://api.accshub.org';
+    return `${baseUrl}/refreshtoken`;
   };
 
   const generateApiBody = () => {

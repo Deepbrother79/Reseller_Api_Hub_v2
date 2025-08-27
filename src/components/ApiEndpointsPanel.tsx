@@ -50,17 +50,17 @@ const ApiEndpointsPanel: React.FC<ApiEndpointsPanelProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">GET</span>
-              <code className="text-xs">/api-items</code>
+              <code className="text-xs">/items</code>
               <span className="text-xs text-gray-500">- Retrieve all products</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">POST</span>
-              <code className="text-xs">/api-process</code>
+              <code className="text-xs">/process</code>
               <span className="text-xs text-gray-500">- Process a request</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">GET</span>
-              <code className="text-xs">/api-history</code>
+              <code className="text-xs">/history</code>
               <span className="text-xs text-gray-500">- Get transaction history</span>
             </div>
             <div className="flex items-center gap-2">
