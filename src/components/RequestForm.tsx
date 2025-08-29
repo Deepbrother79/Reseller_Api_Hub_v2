@@ -93,6 +93,9 @@ const RequestForm: React.FC<RequestFormProps> = ({
   useEffect(() => {
     if (selectedProductData) {
       setProductSearch(selectedProductData.name);
+    } else {
+      // Clear search input when no product is selected
+      setProductSearch('');
     }
   }, [selectedProductData]);
 
@@ -145,8 +148,28 @@ const RequestForm: React.FC<RequestFormProps> = ({
                   setShowProductDropdown(true);
                 }}
                 onFocus={() => setShowProductDropdown(true)}
-                className="pr-10"
+                className="pr-20"
               />
+              
+              {/* Clear button (X) */}
+              {productSearch && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-10 top-1 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                  onClick={() => {
+                    setProductSearch('');
+                    onProductSelect('');
+                    setShowProductDropdown(false);
+                  }}
+                  title="Clear selection"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {/* Dropdown toggle button */}
               <Button
                 type="button"
                 variant="ghost"

@@ -96,12 +96,28 @@ const Index = () => {
     setSelectedCategory(category);
     setSelectedSubcategory('All'); // Reset subcategory when category changes
     setSelectedProduct(''); // Reset selected product
+    
+    // Show toast to inform user that product selection was cleared
+    if (selectedProduct) {
+      toast({
+        title: "Product Selection Cleared",
+        description: `Product selection cleared due to category change`,
+      });
+    }
   };
 
   // Handle subcategory change
   const handleSubcategoryChange = (subcategory: string) => {
     setSelectedSubcategory(subcategory);
     setSelectedProduct(''); // Reset selected product
+    
+    // Show toast to inform user that product selection was cleared
+    if (selectedProduct) {
+      toast({
+        title: "Product Selection Cleared", 
+        description: `Product selection cleared due to subcategory change`,
+      });
+    }
   };
 
   // Handle product click from inventory table
