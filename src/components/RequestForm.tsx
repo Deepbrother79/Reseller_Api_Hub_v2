@@ -1,12 +1,12 @@
 
-import React from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Copy } from "lucide-react";
+import { Copy, Search, X, ChevronDown } from "lucide-react";
 import ProductTooltip from './ProductTooltip';
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -57,7 +57,44 @@ const RequestForm: React.FC<RequestFormProps> = ({
   useMasterToken,
   setUseMasterToken
 }) => {
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const productDropdownRef = useRef<HTMLDivElement>(null);
+  
   const selectedProductData = products.find(p => p.id === selectedProduct);
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!productSearch.trim()) return products;
+    
+    const query = productSearch.toLowerCase().trim();
+    return products.filter(product => {
+      const nameMatch = product.name.toLowerCase().includes(query);
+      const descriptionMatch = product.short_description?.toLowerCase().includes(query) || false;
+      return nameMatch || descriptionMatch;
+    });
+  }, [products, productSearch]);
+
+  // Hook for click-outside functionality
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (productDropdownRef.current && !productDropdownRef.current.contains(event.target as Node)) {
+        setShowProductDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Update search input when product is selected externally
+  useEffect(() => {
+    if (selectedProductData) {
+      setProductSearch(selectedProductData.name);
+    }
+  }, [selectedProductData]);
 
   // Extract output_result from apiResult
   const getOutputResult = () => {
@@ -93,20 +130,112 @@ const RequestForm: React.FC<RequestFormProps> = ({
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="product">Product</Label>
-            <Select value={selectedProduct} onValueChange={onProductSelect}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a product" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-2" ref={productDropdownRef}>
+            <Label htmlFor="product-search">Product</Label>
+            
+            {/* Advanced search input with custom dropdown */}
+            <div className="relative">
+              <Input
+                id="product-search"
+                type="text"
+                placeholder="Type to search products..."
+                value={productSearch}
+                onChange={(e) => {
+                  setProductSearch(e.target.value);
+                  setShowProductDropdown(true);
+                }}
+                onFocus={() => setShowProductDropdown(true)}
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1 h-8 w-8 p-0 hover:bg-gray-100"
+                onClick={() => {
+                  setShowProductDropdown(!showProductDropdown);
+                }}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Custom dropdown with filtered products */}
+            {showProductDropdown && (
+              <div className="relative">
+                <div className="absolute top-0 left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-y-auto">
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                        onClick={() => {
+                          onProductSelect(product.id);
+                          setProductSearch(product.name);
+                          setShowProductDropdown(false);
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900">{product.name}</span>
+                          {product.short_description && (
+                            <span className="text-xs text-gray-500 mt-1">
+                              {product.short_description}
+                            </span>
+                          )}
+                          {product.quantity !== undefined && (
+                            <div className="flex items-center mt-1 gap-2">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                updatedProductIds.has(product.id)
+                                  ? 'animate-pulse bg-yellow-200 text-yellow-800'
+                                  : product.quantity === null || product.quantity === undefined
+                                    ? 'bg-gray-100 text-gray-500' 
+                                    : product.quantity >= 1 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : 'bg-red-100 text-red-700'
+                              }`}>
+                                Qty: {product.quantity === null || product.quantity === undefined ? 'N/A' : product.quantity}
+                              </span>
+                              {product.value && (
+                                <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                  {product.value.toFixed(4)} credits
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-gray-500 text-sm">
+                      {productSearch.trim() === '' ? 'Type to search products...' : `No products found for "${productSearch}"`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Fallback traditional select (hidden by default, can be shown if needed) */}
+            <div className="hidden">
+              <Select value={selectedProduct} onValueChange={(value) => {
+                onProductSelect(value);
+                const selectedProduct = products.find(p => p.id === value);
+                if (selectedProduct) {
+                  setProductSearch(selectedProduct.name);
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             {products.length === 0 && (
               <p className="text-sm text-gray-500">Loading products...</p>
             )}
