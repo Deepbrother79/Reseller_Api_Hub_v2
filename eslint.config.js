@@ -24,6 +24,18 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
+      "no-empty": "warn",
+      "@typescript-eslint/no-unused-expressions": [
+        "error",
+        {
+          allowShortCircuit: true,
+          allowTernary: true,
+          allowTaggedTemplates: true,
+        },
+      ],
     },
   }
 );

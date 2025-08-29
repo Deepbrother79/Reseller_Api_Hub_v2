@@ -4,9 +4,36 @@
       "Bash(npm run lint)",
       "Bash(npm run build:*)",
       "Bash(npm install)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(npm audit:*)"
     ],
     "deny": [],
     "ask": []
+  },
+  "claude_desktop_config": {
+    "mcpServers": {
+      "mcp.config.usrlocalmcp.GitHub_Hub_API": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-github"
+        ],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "your_github_token_here"
+        }
+      },
+      "mcp.config.usrlocalmcp.supabase_Hub_Api": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-supabase"
+        ],
+        "env": {
+          "SUPABASE_URL": "your_supabase_url_here",
+          "SUPABASE_ANON_KEY": "your_supabase_anon_key_here"
+        }
+      }
+    }
   }
 }
