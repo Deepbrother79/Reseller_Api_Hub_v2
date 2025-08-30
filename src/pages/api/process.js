@@ -22,25 +22,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    let product, token, qty
+    let product_id, product_name, token, qty, use_master_token
 
     if (req.method === 'GET') {
       // Estrai parametri dalla query string
-      product = req.query.product
+      product_name = req.query.product || req.query.product_name
+      product_id = req.query.product_id
       token = req.query.token
-      qty = parseInt(req.query.qty)
+      qty = parseInt(req.query.qty) || 0
+      use_master_token = req.query.use_master_token === 'true'
     } else if (req.method === 'POST') {
       // Estrai parametri dal body
       const body = req.body
-      product = body.product
+      console.log('process.js - POST body received:', JSON.stringify(body))
+      product_name = body.product || body.product_name
+      product_id = body.product_id
       token = body.token
-      qty = parseInt(body.qty)
+      qty = parseInt(body.qty) || 0
+      use_master_token = Boolean(body.use_master_token)
     }
 
-    if (!product || !token || !qty) {
+    if ((!product_name && !product_id) || !token || qty <= 0) {
       return res.status(400).json({ 
         error: 'Bad request',
-        message: 'Missing required parameters: product, token, qty'
+        message: 'Missing required parameters: (product_name OR product_id), token, qty'
       })
     }
 
@@ -52,9 +57,11 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        product_name: product,
+        product_id: product_id,
+        product_name: product_name,
         token: token,
-        qty: qty
+        qty: qty,
+        use_master_token: use_master_token
       })
     })
 

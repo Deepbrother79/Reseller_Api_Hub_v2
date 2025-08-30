@@ -21,15 +21,17 @@ serve(async (req) => {
       product_name = url.searchParams.get('product_name') || url.searchParams.get('product');
       product_id = url.searchParams.get('product_id');
       token = url.searchParams.get('token');
-      qty = parseInt(url.searchParams.get('qty') || '0');
+      qty = parseInt(url.searchParams.get('qty') || '0') || 0;
       use_master_token = url.searchParams.get('use_master_token') === 'true';
     } else if (req.method === 'POST') {
       const body = await req.json();
+      console.log('POST body received:', JSON.stringify(body));
       product_name = body.product_name || body.product;
       product_id = body.product_id;
       token = body.token;
-      qty = parseInt(body.qty || '0');
+      qty = parseInt(body.qty || '0') || 0;
       use_master_token = Boolean(body.use_master_token);
+      console.log('Parsed values:', { product_name, product_id, token, qty, use_master_token });
     } else {
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
@@ -38,7 +40,7 @@ serve(async (req) => {
     }
 
     // Validate input - support both product_name and product_id
-    if ((!product_name && !product_id) || !token || !qty) {
+    if ((!product_name && !product_id) || !token || qty <= 0) {
       return new Response(
         JSON.stringify({ 
           success: false, 
