@@ -87,15 +87,16 @@ const RequestForm: React.FC<RequestFormProps> = ({
     });
   }
 
-  // Filter products based on search query
+  // Filter products based on search query (supports name, ID, and description)
   const filteredProducts = useMemo(() => {
     if (!productSearch.trim()) return products;
     
     const query = productSearch.toLowerCase().trim();
     return products.filter(product => {
       const nameMatch = product.name.toLowerCase().includes(query);
+      const idMatch = product.id.toLowerCase().includes(query);
       const descriptionMatch = product.short_description?.toLowerCase().includes(query) || false;
-      return nameMatch || descriptionMatch;
+      return nameMatch || idMatch || descriptionMatch;
     });
   }, [products, productSearch]);
 
@@ -158,14 +159,14 @@ const RequestForm: React.FC<RequestFormProps> = ({
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2" ref={productDropdownRef}>
-            <Label htmlFor="product-search">Product</Label>
+            <Label htmlFor="product-search">Product Name or Id</Label>
             
             {/* Advanced search input with custom dropdown */}
             <div className="relative">
               <Input
                 id="product-search"
                 type="text"
-                placeholder="Type to search products..."
+                placeholder="Type product name or ID..."
                 value={productSearch}
                 onChange={(e) => {
                   setProductSearch(e.target.value);
@@ -224,6 +225,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
                       >
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900">{product.name}</span>
+                          <span className="text-xs text-gray-400 mt-0.5">ID: {product.id}</span>
                           {product.short_description && (
                             <span className="text-xs text-gray-500 mt-1">
                               {product.short_description}
@@ -254,7 +256,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
                     ))
                   ) : (
                     <div className="p-3 text-gray-500 text-sm">
-                      {productSearch.trim() === '' ? 'Type to search products...' : `No products found for "${productSearch}"`}
+                      {productSearch.trim() === '' ? 'Type product name or ID...' : `No products found for "${productSearch}"`}
                     </div>
                   )}
                 </div>

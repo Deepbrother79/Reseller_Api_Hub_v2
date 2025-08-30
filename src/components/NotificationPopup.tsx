@@ -140,9 +140,9 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({ forceVisib
                     </h3>
                   )}
                   {notification.Content && (
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                       {notification.Content}
-                    </p>
+                    </div>
                   )}
                   <p className="text-xs text-muted-foreground">
                     {new Date(notification.created_at).toLocaleString('it-IT')}
