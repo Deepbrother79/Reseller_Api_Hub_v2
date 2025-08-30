@@ -16,10 +16,13 @@ interface Product {
   short_description?: string;
   quantity?: number;
   value?: number;
+  category?: string;
+  subcategory?: string;
 }
 
 interface RequestFormProps {
   products: Product[];
+  fullProducts?: Product[];
   selectedProduct: string;
   token: string;
   quantity: string;
@@ -40,6 +43,7 @@ interface RequestFormProps {
 
 const RequestForm: React.FC<RequestFormProps> = ({
   products,
+  fullProducts = [],
   selectedProduct,
   token,
   quantity,
@@ -61,7 +65,27 @@ const RequestForm: React.FC<RequestFormProps> = ({
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const productDropdownRef = useRef<HTMLDivElement>(null);
   
-  const selectedProductData = products.find(p => p.id === selectedProduct);
+  // Try to find the selected product in the main products array first, then fallback to fullProducts
+  const selectedProductData = products.find(p => p.id === selectedProduct) || 
+                              fullProducts.find(p => p.id === selectedProduct);
+  
+  // Debug logging for product selection
+  if (selectedProduct && !selectedProductData) {
+    console.log('RequestForm: Selected product not found in either array:', {
+      selectedProduct,
+      productsCount: products.length,
+      fullProductsCount: fullProducts.length,
+      productsIds: products.map(p => p.id).slice(0, 5),
+      fullProductsIds: fullProducts.map(p => p.id).slice(0, 5)
+    });
+  } else if (selectedProduct && selectedProductData) {
+    console.log('RequestForm: Found selected product:', {
+      selectedProduct,
+      productName: selectedProductData.name,
+      foundInMainArray: !!products.find(p => p.id === selectedProduct),
+      foundInFullArray: !!fullProducts.find(p => p.id === selectedProduct)
+    });
+  }
 
   // Filter products based on search query
   const filteredProducts = useMemo(() => {

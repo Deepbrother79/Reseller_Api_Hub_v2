@@ -48,9 +48,17 @@ serve(async (req) => {
     // Try to find in regular tokens table first
     const { data: regularToken, error: regularTokenError } = await supabase
       .from('tokens')
-      .select('credits, name')
+      .select('credits, name, product_id')
       .eq('token', token)
       .maybeSingle();
+
+    console.log('Regular token query result:', {
+      regularToken,
+      regularTokenError,
+      hasProductId: regularToken?.product_id ? true : false,
+      productIdValue: regularToken?.product_id,
+      tokenName: regularToken?.name
+    });
 
     let tokenData = regularToken;
     let isMasterToken = false;
@@ -92,13 +100,60 @@ serve(async (req) => {
       );
     }
 
+    // Get product_id from either direct field or by looking up the product by name
+    let finalProductId = null;
+    if (!isMasterToken) {
+      finalProductId = tokenData.product_id;
+      
+      // If no direct product_id, try to get it by looking up the product by name
+      if (!finalProductId && tokenData.name) {
+        console.log('No direct product_id, looking up by product name:', tokenData.name);
+        
+        const { data: product, error: productError } = await supabase
+          .from('products')
+          .select('id')
+          .eq('name', tokenData.name)
+          .maybeSingle();
+        
+        if (product && !productError) {
+          finalProductId = product.id;
+          console.log('Found product_id by name lookup:', finalProductId);
+        } else {
+          console.log('Product lookup by name failed:', productError);
+        }
+      }
+      
+      console.log('Product ID resolution:', {
+        directProductId: tokenData.product_id,
+        lookupProductId: finalProductId !== tokenData.product_id ? finalProductId : 'not_used',
+        finalProductId,
+        productName: tokenData.name
+      });
+    }
+
+    const responseData = { 
+      success: true, 
+      credits: tokenData.credits,
+      product_name: isMasterToken ? 'Master Token' : tokenData.name,
+      product_id: finalProductId,
+      is_master_token: isMasterToken
+    };
+
+    console.log('API Credits Response:', JSON.stringify(responseData, null, 2));
+    
+    // Extra debug for product_id issues
+    if (!isMasterToken && !finalProductId) {
+      console.log('WARNING: Non-master token missing product_id!', {
+        tokenData,
+        allFields: Object.keys(tokenData),
+        directProductId: tokenData.product_id,
+        productName: tokenData.name,
+        finalProductId
+      });
+    }
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        credits: tokenData.credits,
-        product_name: isMasterToken ? 'Master Token' : tokenData.name,
-        is_master_token: isMasterToken
-      }),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

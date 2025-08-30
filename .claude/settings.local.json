@@ -7,7 +7,10 @@
       "Bash(git push:*)",
       "Bash(git add:*)",
       "Bash(npm audit:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx supabase functions deploy:*)"
     ],
     "deny": [],
     "ask": []

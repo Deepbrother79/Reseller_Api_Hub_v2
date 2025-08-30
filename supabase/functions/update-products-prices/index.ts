@@ -10,8 +10,14 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Calculate markup based on VND price
-function calculateMarkup(priceVND: number): number {
+// Calculate markup based on VND price or custom percentage_profit
+function calculateMarkup(priceVND: number, customProfitPercentage?: number): number {
+  // If custom percentage_profit is provided, use it
+  if (customProfitPercentage !== null && customProfitPercentage !== undefined) {
+    return 1 + (customProfitPercentage / 100); // Convert percentage to multiplier
+  }
+  
+  // Otherwise, use the default pricing tiers
   if (priceVND >= 1 && priceVND <= 49) {
     return 1.50; // +50%
   } else if (priceVND >= 50 && priceVND <= 499) {
@@ -44,10 +50,10 @@ serve(async (req) => {
 
     console.log('Starting products prices update process...');
 
-    // Get all products to update their prices
+    // Get all products to update their prices (including percentage_profit)
     const { data: products, error: productsError } = await supabase
       .from('products')
-      .select('id, name');
+      .select('id, name, percentage_profit');
 
     if (productsError) {
       console.error('Error fetching products:', productsError);
@@ -204,14 +210,16 @@ serve(async (req) => {
               // Convert to number and process
               const priceVND = parseFloat(String(extractedPrice));
               if (!isNaN(priceVND) && priceVND > 0) {
-                // Apply markup based on price range
-                const markup = calculateMarkup(priceVND);
+                // Apply markup based on custom percentage_profit or default price range
+                const markup = calculateMarkup(priceVND, product.percentage_profit);
                 const markedUpPriceVND = priceVND * markup;
                 
                 // Convert to USD with 4 decimal places
                 finalPriceUSD = parseFloat((markedUpPriceVND / VND_TO_USD_RATE).toFixed(4));
                 
-                console.log(`Price calculation for ${product.id}: ${priceVND} VND -> ${markedUpPriceVND} VND (${markup}x) -> ${finalPriceUSD} USD`);
+                const profitSource = product.percentage_profit !== null ? 
+                  `custom ${product.percentage_profit}%` : 'default tier';
+                console.log(`Price calculation for ${product.id}: ${priceVND} VND -> ${markedUpPriceVND} VND (${markup}x, ${profitSource}) -> ${finalPriceUSD} USD`);
               } else {
                 console.error(`Invalid price for ${product.id}:`, extractedPrice);
                 finalPriceUSD = 1.0000;

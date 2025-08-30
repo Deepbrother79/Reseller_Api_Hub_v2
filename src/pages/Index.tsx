@@ -66,10 +66,13 @@ const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [credits, setCredits] = useState<number | null>(null);
   const [tokenProductName, setTokenProductName] = useState<string>('');
+  const [tokenProductId, setTokenProductId] = useState<string>('');
+  const [isMasterToken, setIsMasterToken] = useState<boolean>(false);
   const [showOnlyAvailableProducts, setShowOnlyAvailableProducts] = useState(true);
   
-  // Ref for the request form section
+  // Refs for scrolling functionality
   const requestFormRef = useRef<HTMLDivElement>(null);
+  const transactionsRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
 
@@ -281,17 +284,13 @@ const Index = () => {
 
   const generateProcessRequestUrl = () => {
     if (!selectedProduct || !token || !quantity) return '';
-    const selectedProductData = products.find(p => p.id === selectedProduct);
-    const productName = selectedProductData?.name || '';
-    return `https://api.accshub.org/process?product_name=${encodeURIComponent(productName)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
+    return `https://api.accshub.org/process?product_id=${encodeURIComponent(selectedProduct)}&token=${encodeURIComponent(token)}&qty=${quantity}`;
   };
 
   const generateProcessRequestBody = () => {
     if (!selectedProduct || !token || !quantity) return '';
-    const selectedProductData = products.find(p => p.id === selectedProduct);
-    const productName = selectedProductData?.name || '';
     return JSON.stringify({
-      product_name: productName,
+      product_id: selectedProduct,
       token: token,
       qty: parseInt(quantity),
       use_master_token: useMasterToken
@@ -331,16 +330,13 @@ const Index = () => {
     setApiResult(null);
     
     try {
-      const selectedProductData = products.find(p => p.id === selectedProduct);
-      const productName = selectedProductData?.name || '';
-
       const response = await fetch(`${baseUrl}/api-process`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          product_name: productName,
+          product_id: selectedProduct,
           token: token,
           qty: parseInt(quantity),
           use_master_token: useMasterToken
@@ -384,22 +380,83 @@ const Index = () => {
       if (response.ok && data.success && typeof data.credits === 'number') {
         setCredits(data.credits);
         
-        // Set product name associated with this token
+        console.log('Credits API full response data:', data);
+        
+        // Set product name and other token information
         if (data.product_name && typeof data.product_name === 'string') {
           setTokenProductName(data.product_name);
         } else {
           setTokenProductName('');
+        }
+        
+        // Set master token flag
+        const isMaster = Boolean(data.is_master_token);
+        setIsMasterToken(isMaster);
+        console.log('Set isMasterToken to:', isMaster);
+        
+        // Set product ID for non-master tokens directly from credits API
+        if (!isMaster && data.product_id && typeof data.product_id === 'string') {
+          setTokenProductId(data.product_id);
+          console.log('Set tokenProductId from credits API to:', data.product_id);
+        } else if (!isMaster && data.product_name) {
+          // If no product_id but we have product_name, lookup from products array
+          console.log('No product_id in credits response, looking up by product_name:', data.product_name);
+          
+          // First try in products array
+          let foundProduct = products.find(p => p.name === data.product_name);
+          if (!foundProduct) {
+            // Try in fullProducts array as fallback
+            foundProduct = fullProducts.find(p => p.name === data.product_name);
+          }
+          
+          if (foundProduct) {
+            setTokenProductId(foundProduct.id);
+            console.log('Found product_id by name lookup in frontend:', foundProduct.id);
+          } else {
+            // If not found in loaded arrays, try to fetch from API
+            console.log('Product not found in loaded arrays, fetching from API...');
+            try {
+              const productsResponse = await fetch(`${baseUrl}/api-products-internal-gt45dsqt1plqkwsxcz`);
+              const productsData = await productsResponse.json();
+              
+              if (productsData.success && productsData.products) {
+                const apiProduct = productsData.products.find((p: any) => p.name === data.product_name);
+                if (apiProduct) {
+                  setTokenProductId(apiProduct.id);
+                  console.log('Found product_id by API lookup:', apiProduct.id);
+                } else {
+                  setTokenProductId('');
+                  console.log('Product not found even in API lookup:', data.product_name);
+                }
+              } else {
+                setTokenProductId('');
+                console.log('Failed to fetch products from API for lookup');
+              }
+            } catch (error) {
+              console.error('Error fetching products for lookup:', error);
+              setTokenProductId('');
+            }
+          }
+        } else {
+          setTokenProductId('');
+          if (!isMaster) {
+            console.log('No product_id and no product_name in credits response:', data);
+          }
         }
       } else {
         // When API fails or returns error, reset values
         console.log('Credits API returned error or invalid data:', data);
         setCredits(null);
         setTokenProductName('');
+        setTokenProductId('');
+        setIsMasterToken(false);
       }
     } catch (error) {
       console.error('Error fetching credits:', error);
       setCredits(null);
       setTokenProductName('');
+      setTokenProductId('');
+      setIsMasterToken(false);
     }
   };
 
@@ -452,6 +509,108 @@ const Index = () => {
     setHistoryToken(value);
     setCredits(null); // Reset credits when token changes
     setTokenProductName(''); // Reset product name when token changes
+    setTokenProductId(''); // Reset product ID when token changes
+    setIsMasterToken(false); // Reset master token flag when token changes
+  };
+
+  // Handle credit box click to auto-fill request form
+  const handleCreditBoxClick = () => {
+    console.log('Credit box clicked:', {
+      isMasterToken,
+      tokenProductId,
+      historyToken,
+      productsLength: products.length
+    });
+
+    if (isMasterToken) {
+      // For master tokens: only fill token and set master token flag
+      setToken(historyToken);
+      setUseMasterToken(true);
+      setQuantity('');
+      
+      toast({
+        title: "Form Auto-filled",
+        description: "Master token settings applied",
+      });
+    } else if (tokenProductId) {
+      // For regular tokens: fill product, token, and uncheck master token
+      console.log('Setting product ID:', tokenProductId);
+      
+      // First check if product exists in the main products array
+      const productInMainArray = products.find(p => p.id === tokenProductId);
+      const productInFullArray = fullProducts.find(p => p.id === tokenProductId);
+      
+      console.log('Product search results:', {
+        productInMainArray,
+        productInFullArray,
+        mainArrayLength: products.length,
+        fullArrayLength: fullProducts.length
+      });
+      
+      // Set the selected product regardless of whether it's found in products array
+      // The RequestForm will handle the display properly
+      setSelectedProduct(tokenProductId);
+      setToken(historyToken);
+      setUseMasterToken(false);
+      setQuantity('');
+      
+      // Update category filters based on available product data
+      const productForCategories = productInMainArray || productInFullArray;
+      
+      if (productForCategories) {
+        // If we found the product in either array, use its categories
+        if (productForCategories.category) {
+          setSelectedCategory(productForCategories.category);
+        } else {
+          setSelectedCategory('All');
+        }
+        
+        if (productForCategories.subcategory) {
+          setSelectedSubcategory(productForCategories.subcategory);
+        } else {
+          setSelectedSubcategory('All');
+        }
+        
+        console.log('Updated categories from product:', productForCategories.category, productForCategories.subcategory);
+      } else {
+        // If product not found in either array, show all categories
+        setSelectedCategory('All');
+        setSelectedSubcategory('All');
+        console.log('Product not found in either array, showing all categories');
+      }
+      
+      toast({
+        title: "Form Auto-filled",
+        description: productInMainArray 
+          ? "Product and token settings applied" 
+          : "Token settings applied (product may not be in current filter)",
+      });
+    } else {
+      toast({
+        title: "Auto-fill Error",
+        description: "No product information available",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Scroll to request form
+    if (requestFormRef.current) {
+      requestFormRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
+  };
+
+  // Handle scroll to transactions
+  const handleScrollToTransactions = () => {
+    if (transactionsRef.current) {
+      transactionsRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
   };
 
   return (
@@ -493,6 +652,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" ref={requestFormRef}>
           <RequestForm
             products={filteredProducts}
+            fullProducts={fullProducts}
             selectedProduct={selectedProduct}
             token={token}
             quantity={quantity}
@@ -516,11 +676,15 @@ const Index = () => {
             historyLoading={historyLoading}
             credits={credits}
             tokenProductName={tokenProductName}
+            tokenProductId={tokenProductId}
+            isMasterToken={isMasterToken}
             onHistoryTokenChange={handleHistoryTokenChange}
             onHistorySubmit={handleHistorySubmit}
             onCopyUrl={copyToClipboard}
             generateHistoryUrl={generateHistoryUrl}
             generateCreditsUrl={generateCreditsUrl}
+            onCreditBoxClick={handleCreditBoxClick}
+            onScrollToTransactions={handleScrollToTransactions}
           />
         </div>
 
@@ -537,7 +701,9 @@ const Index = () => {
           <RefundForm baseUrl={baseUrl} onCopyUrl={copyToClipboard} />
         </div>
 
-        <TransactionList transactions={transactions} />
+        <div ref={transactionsRef}>
+          <TransactionList transactions={transactions} />
+        </div>
 
         {/* Products Table */}
         <div className="mt-6">

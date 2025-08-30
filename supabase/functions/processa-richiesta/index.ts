@@ -14,8 +14,8 @@ serve(async (req) => {
   }
 
   try {
-    const { product_name, token, qty, use_master_token } = await req.json();
-    console.log('Processing request:', { product_name, token, qty, use_master_token });
+    const { product_id, token, qty, use_master_token } = await req.json();
+    console.log('Processing request:', { product_id, token, qty, use_master_token });
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -23,11 +23,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Validate input
-    if (!product_name || !token || !qty) {
+    if (!product_id || !token || !qty) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: "Missing required fields: product_name, token, qty" 
+          message: "Missing required fields: product_id, token, qty" 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -37,7 +37,7 @@ serve(async (req) => {
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('*')
-      .eq('name', product_name)
+      .eq('id', product_id)
       .single();
 
     if (productError || !product) {
@@ -431,7 +431,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: status === 'success', 
         message: status === 'success' 
-          ? `Successfully processed ${qty} units of ${product_name}. Remaining credits: ${isMasterToken ? (tokenData.credits as number) - requiredCredits : tokenData.credits - requiredCredits}${isMasterToken ? ' USD' : ''}`
+          ? `Successfully processed ${qty} units of ${product.name}. Remaining credits: ${isMasterToken ? (tokenData.credits as number) - requiredCredits : tokenData.credits - requiredCredits}${isMasterToken ? ' USD' : ''}`
           : "Request processed but failed",
         api_response: filteredResponse,
         transaction_id: transactionData?.id || null

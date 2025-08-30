@@ -14,17 +14,19 @@ serve(async (req) => {
   }
 
   try {
-    let product_name, token, qty, use_master_token;
+    let product_name, product_id, token, qty, use_master_token;
 
     if (req.method === 'GET') {
       const url = new URL(req.url);
       product_name = url.searchParams.get('product_name') || url.searchParams.get('product');
+      product_id = url.searchParams.get('product_id');
       token = url.searchParams.get('token');
       qty = parseInt(url.searchParams.get('qty') || '0');
       use_master_token = url.searchParams.get('use_master_token') === 'true';
     } else if (req.method === 'POST') {
       const body = await req.json();
       product_name = body.product_name || body.product;
+      product_id = body.product_id;
       token = body.token;
       qty = parseInt(body.qty || '0');
       use_master_token = Boolean(body.use_master_token);
@@ -35,17 +37,40 @@ serve(async (req) => {
       );
     }
 
-    if (!product_name || !token || !qty) {
+    // Validate input - support both product_name and product_id
+    if ((!product_name && !product_id) || !token || !qty) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Missing required parameters: product_name, token, qty' 
+          error: 'Missing required parameters: (product_name OR product_id), token, qty' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Chiama la funzione processa-richiesta esistente
+    // If product_name was provided but not product_id, look up the product_id
+    let finalProductId = product_id;
+    if (!product_id && product_name) {
+      const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('name', product_name)
+        .single();
+      
+      if (productError || !product) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Product not found' 
+          }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      finalProductId = product.id;
+    }
+
+    // Call the processa-richiesta function with product_id
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
@@ -56,7 +81,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
         body: JSON.stringify({
-          product_name: product_name,
+          product_id: finalProductId,
           token: token,
           qty: qty,
           use_master_token
