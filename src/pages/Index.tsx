@@ -8,10 +8,11 @@ import TransactionList from '@/components/TransactionList';
 import RefundForm from '@/components/RefundForm';
 import CategoryFilter from '@/components/CategoryFilter';
 import { NotificationPopup } from '@/components/NotificationPopup';
+import FAQ from '@/components/FAQ';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Bell } from 'lucide-react';
+import { Bell, HelpCircle } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -216,6 +217,7 @@ const Index = () => {
   
   // State for notification popup visibility
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showFAQ, setShowFAQ] = useState(false);
 
   // Subscribe to realtime updates for products quantity
   useEffect(() => {
@@ -636,6 +638,13 @@ const Index = () => {
                 📰 News
               </Button>
               <Button 
+                onClick={() => setShowFAQ(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 lg:px-4 lg:py-3 text-sm lg:text-base flex items-center gap-2"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">FAQ</span>
+              </Button>
+              <Button 
                 onClick={() => window.open('https://pay.accshub.org/', '_blank')}
                 className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-base"
               >
@@ -802,6 +811,9 @@ const Index = () => {
           </Card>
         </div>
       </div>
+
+      {/* FAQ Modal */}
+      <FAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
     </div>
   );
 };

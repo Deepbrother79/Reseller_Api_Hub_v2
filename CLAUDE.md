@@ -53,6 +53,7 @@ This is a **Token Transaction Hub** - a React-based web application for managing
 3. **Refund System** - Process refund requests for failed transactions
 4. **API Endpoints Panel** - Display and test available API endpoints
 5. **Service Utilities** - Additional services like 2FA, OAuth tokens, email inbox reading
+6. **FAQ System** - Comprehensive help system for all features and services
 
 ### Data Layer
 - **Supabase Integration**: Client configured in `src/integrations/supabase/client.ts`
@@ -85,6 +86,28 @@ When working on this codebase:
 4. **Forms**: Use React Hook Form with Zod validation as seen in existing form components
 5. **State Management**: Use React Query for server state, local React state for UI state
 
+## Recent Updates
+
+### Latest Changes (2025-01-30)
+- **CapCut Pro Service Removal**: Removed CapCut Pro service from ServicesUtils page and navigation
+- **API Integration Updates**: Updated read-inbox-mail function to use external API (https://api.accshub.org/readinbox)
+- **Enhanced OAuth2 Service**: Improved API body generation to use comma-separated format instead of newlines
+- **Mobile UI Optimization**: Enhanced ServicesUtils header with gradient styling and responsive design
+- **Edge Function Improvements**: Updated parsing functions to support both newline and comma-separated input formats
+- **FAQ System**: Added comprehensive FAQ system for better user guidance
+
+### Available Services
+**Main Dashboard (Index.tsx):**
+- Transaction Processing with product selection
+- Transaction History with filtering
+- Refund System for failed transactions
+- API Endpoints documentation
+
+**Services & Utils (ServicesUtils.tsx):**
+- Get 2FA codes
+- Read Inbox Mail (with transaction ID or email strings)
+- Get OAuth2 tokens (refresh_token|client_id)
+
 ## Important Notes
 
 - This is a Lovable-generated project with automatic deployments
@@ -92,3 +115,4 @@ When working on this codebase:
 - API endpoints support both GET and POST methods with CORS enabled
 - The application handles real-time notifications and transaction status updates
 - Service utilities include sensitive operations (2FA, OAuth) - handle with appropriate security considerations
+- All services support both regular tokens and master tokens for flexible credit management

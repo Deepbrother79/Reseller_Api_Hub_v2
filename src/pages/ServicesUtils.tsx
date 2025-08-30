@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { Home, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -10,6 +10,7 @@ import ServiceNavigation from "@/components/services/ServiceNavigation";
 import ReadInboxService from "@/components/services/ReadInboxService";
 import Get2FAService from "@/components/services/Get2FAService";
 import GetOAuth2Service from "@/components/services/GetOAuth2Service";
+import FAQ from "@/components/FAQ";
 
 interface EmailResult {
   mail: string;
@@ -29,6 +30,7 @@ const ServicesUtils = () => {
   const [results, setResults] = useState<EmailResult[]>([]);
   const [useTransactionIds, setUseTransactionIds] = useState(true);
   const [useEmailStrings, setUseEmailStrings] = useState(false);
+  const [showFAQ, setShowFAQ] = useState(false);
   const { toast } = useToast();
 
   const services = [
@@ -208,13 +210,20 @@ const ServicesUtils = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 md:mb-8">
-          <div className="flex items-center gap-3 md:gap-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <Link to="/">
               <Button variant="outline" className="flex items-center gap-2 text-sm md:text-base">
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Home</span>
               </Button>
             </Link>
+            <Button 
+              onClick={() => setShowFAQ(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base flex items-center gap-2"
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">FAQ</span>
+            </Button>
           </div>
           <div className="text-center md:text-left">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 md:mb-3">
@@ -270,6 +279,9 @@ const ServicesUtils = () => {
           </Card>
         )}
       </div>
+
+      {/* FAQ Modal */}
+      <FAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
     </div>
   );
 };
