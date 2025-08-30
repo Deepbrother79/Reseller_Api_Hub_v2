@@ -308,107 +308,42 @@ serve(async (req) => {
 });
 
 async function processEmailCredentials(credentials: string, supabase: any): Promise<{success: boolean, results: EmailResult[], error?: string}> {
-  const parts = credentials.split('|');
-  if (parts.length < 4) {
-    return { success: false, results: [], error: 'Invalid email credentials format. Expected format: email|password|refresh_token|client_id' };
-  }
-
-  const [email, password, refreshToken, clientId] = parts;
-  
   try {
-    // Get access token
-    const tokenData = {
-      client_id: clientId,
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      scope: "https://graph.microsoft.com/.default offline_access"
-    };
-
-    const tokenResponse = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+    // Call external API instead of processing directly
+    const response = await fetch('https://api.accshub.org/readinbox', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: new URLSearchParams(tokenData)
+      body: JSON.stringify({
+        credentials: credentials
+      })
     });
 
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('Failed to get access token:', errorText);
-      
-      // Try to parse error response
-      try {
-        const errorData = JSON.parse(errorText);
-        if (errorData.error === 'invalid_grant') {
-          return { 
-            success: false, 
-            results: [], 
-            error: 'Authentication failed: Invalid or expired email credentials. Please verify the email string format and credentials are correct.' 
-          };
-        } else {
-          return { 
-            success: false, 
-            results: [], 
-            error: `Authentication failed: ${errorData.error_description || errorData.error || 'Invalid credentials'}` 
-          };
-        }
-      } catch {
-        return { success: false, results: [], error: 'Authentication failed: Invalid response from Microsoft authentication server' };
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('External API error:', errorText);
+      return { 
+        success: false, 
+        results: [], 
+        error: `External API error: ${response.status} - ${errorText}` 
+      };
     }
 
-    const tokenResult = await tokenResponse.json();
-    const accessToken = tokenResult.access_token;
-
-    // Get emails from inbox
-    const inboxResponse = await fetch(
-      "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=50&$orderby=receivedDateTime desc",
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json'
-        }
-      }
-    );
-
-    if (!inboxResponse.ok) {
-      const errorText = await inboxResponse.text();
-      console.error('Failed to get emails:', errorText);
-      return { success: false, results: [], error: `Failed to fetch emails: Microsoft API error - ${errorText}` };
+    const apiResult = await response.json();
+    
+    if (apiResult.success && apiResult.results) {
+      return { success: true, results: apiResult.results };
+    } else {
+      return { 
+        success: false, 
+        results: [], 
+        error: apiResult.error || 'External API returned unsuccessful response' 
+      };
     }
-
-    const emailsData = await inboxResponse.json();
-    const emails = emailsData.value || [];
-
-    const results: EmailResult[] = [];
-
-    for (const emailMsg of emails) {
-      const subject = emailMsg.subject || "(no subject)";
-      const fromEmail = emailMsg.from?.emailAddress?.address || "(unknown sender)";
-      const preview = emailMsg.bodyPreview || "";
-      const receivedDateTime = new Date(emailMsg.receivedDateTime);
-      
-      // Format time as HH:MM - DD/MM/YYYY
-      const timeString = `${receivedDateTime.getHours().toString().padStart(2, '0')}:${receivedDateTime.getMinutes().toString().padStart(2, '0')} - ${receivedDateTime.getDate().toString().padStart(2, '0')}/${(receivedDateTime.getMonth() + 1).toString().padStart(2, '0')}/${receivedDateTime.getFullYear()}`;
-      
-      // Extract code
-      const extractedCode = await extractCodeFromEmail(fromEmail, preview, supabase);
-      
-      const content = `Subject: ${subject}\nFrom: ${fromEmail}\nPreview: ${preview}`;
-      
-      results.push({
-        mail: email,
-        from: fromEmail,
-        time: timeString,
-        content: content,
-        code: extractedCode
-      });
-    }
-
-    return { success: true, results };
   } catch (error) {
-    console.error('Error processing email credentials:', error);
-    return { success: false, results: [], error: `Server error processing email credentials: ${error.message}` };
+    console.error('Error calling external API:', error);
+    return { success: false, results: [], error: `Error calling external API: ${error.message}` };
   }
 }
 

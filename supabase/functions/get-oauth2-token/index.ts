@@ -15,15 +15,23 @@ const CONCURRENCY_LIMIT = 10;
 const REQUEST_TIMEOUT_MS = 75_000; // external API may take 25-50s per spec
 
 function parseLines(raw) {
-  const lines = raw.split(/\r?\n/) // split by newline
-  .map((l)=>l.trim()).filter(Boolean);
+  // First try to split by comma, if that fails or gives only one item, try newlines
+  let lines;
+  if (raw.includes(',') && raw.split(',').filter(Boolean).length > 1) {
+    lines = raw.split(',').map((l)=>l.trim()).filter(Boolean);
+  } else {
+    lines = raw.split(/\r?\n/).map((l)=>l.trim()).filter(Boolean);
+  }
+  
   const parsed = [];
   for (const line of lines){
-    // Support both '|' and ':' as separators
+    // Support both '|' and ':' as separators - prioritize '|' over ':'
     const sep = line.includes('|') ? '|' : line.includes(':') ? ':' : null;
     if (!sep) continue;
-    const [email, password, ...rest] = line.split(sep);
-    if (!email || !password || rest.length > 0) continue;
+    const parts = line.split(sep);
+    if (parts.length !== 2) continue; // Must be exactly email and password
+    const [email, password] = parts;
+    if (!email.trim() || !password.trim()) continue;
     parsed.push({
       email: email.trim(),
       password: password.trim()

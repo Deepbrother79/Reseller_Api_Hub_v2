@@ -10,7 +10,6 @@ import ServiceNavigation from "@/components/services/ServiceNavigation";
 import ReadInboxService from "@/components/services/ReadInboxService";
 import Get2FAService from "@/components/services/Get2FAService";
 import GetOAuth2Service from "@/components/services/GetOAuth2Service";
-import CapCutProService from "@/components/services/CapCutProService";
 
 interface EmailResult {
   mail: string;
@@ -35,8 +34,7 @@ const ServicesUtils = () => {
   const services = [
     { id: 'get-2fa', name: 'Get 2FA', disabled: false },
     { id: 'read-inbox', name: 'Read Inbox Mail', disabled: false },
-    { id: 'get-oauth2', name: 'Get Oauth2 Token', disabled: false },
-    { id: 'capcut-pro', name: 'CapCut Pro', disabled: false }
+    { id: 'get-oauth2', name: 'Get Oauth2 Token', disabled: false }
   ];
 
   const copyToClipboard = (text: string) => {
@@ -207,18 +205,24 @@ const ServicesUtils = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-center gap-4">
-          <Link to="/">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Home className="h-4 w-4" />
-              Home
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Services & Utils</h1>
-            <p className="text-gray-600">Advanced tools and utilities for email management and automation</p>
+        <div className="mb-6 md:mb-8">
+          <div className="flex items-center gap-3 md:gap-4 mb-4">
+            <Link to="/">
+              <Button variant="outline" className="flex items-center gap-2 text-sm md:text-base">
+                <Home className="h-4 w-4" />
+                <span className="hidden sm:inline">Home</span>
+              </Button>
+            </Link>
+          </div>
+          <div className="text-center md:text-left">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 md:mb-3">
+              ⚡ Services & Utils
+            </h1>
+            <p className="text-base md:text-lg text-gray-700 font-medium px-2 md:px-0">
+              🚀 Advanced tools and utilities for email management and automation
+            </p>
           </div>
         </div>
 
@@ -257,11 +261,7 @@ const ServicesUtils = () => {
           <GetOAuth2Service onCopy={copyToClipboard} />
         )}
 
-        {activeService === 'capcut-pro' && (
-          <CapCutProService onCopy={copyToClipboard} />
-        )}
-
-        {!['read-inbox', 'get-2fa', 'get-oauth2', 'capcut-pro'].includes(activeService) && (
+        {!['read-inbox', 'get-2fa', 'get-oauth2'].includes(activeService) && (
           <Card>
             <CardContent className="text-center py-12">
               <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>

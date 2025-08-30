@@ -617,24 +617,37 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <NotificationPopup forceVisible={showNotifications} onClose={() => setShowNotifications(false)} />
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8 relative">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">API Management Dashboard</h1>
-          <p className="text-xl text-gray-600 mb-4">Manage your API requests and view transaction history</p>
-          
-          {/* Top right buttons */}
-          <div className="absolute top-0 right-0 flex gap-3">
-            <Button 
-              onClick={() => setShowNotifications(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 text-lg"
-            >
-              📰 News
-            </Button>
-            <Button 
-              onClick={() => window.location.href = '/services-utils'}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 text-lg"
-            >
-              Services & Utils
-            </Button>
+        <div className="mb-8">
+          {/* Header with title and buttons */}
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
+            <div className="text-center lg:text-left">
+              <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                API Hub Dashboard
+              </h1>
+              <p className="text-gray-600 text-lg">Manage your API requests and view transaction history</p>
+            </div>
+            
+            {/* Navigation buttons */}
+            <div className="flex flex-wrap justify-center lg:justify-end gap-2 lg:gap-3">
+              <Button 
+                onClick={() => setShowNotifications(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 lg:px-4 lg:py-3 text-sm lg:text-base"
+              >
+                📰 News
+              </Button>
+              <Button 
+                onClick={() => window.open('https://pay.accshub.org/', '_blank')}
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-base"
+              >
+                Buy Tokens
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/services-utils'}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-base"
+              >
+                Services & Utils
+              </Button>
+            </div>
           </div>
           
           {/* Category Filter */}

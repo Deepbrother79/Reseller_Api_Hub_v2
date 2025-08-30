@@ -290,7 +290,7 @@ useEffect(() => {
     if (!inputText || !token) return '';
     return JSON.stringify({
       token: token.trim(),
-      email_passwords: inputText,
+      email_passwords: inputText.replace(/\r?\n/g, ','),
       remove_duplicates: removeDup,
       use_master_token: useMasterToken,
     }, null, 2);
