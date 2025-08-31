@@ -659,6 +659,12 @@ const Index = () => {
                 <span className="hidden sm:inline">FAQ</span>
               </Button>
               <Button 
+                onClick={() => window.open('https://market.accshub.org/', '_blank')}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-base"
+              >
+                Reseller HUB
+              </Button>
+              <Button 
                 onClick={() => window.open('https://pay.accshub.org/', '_blank')}
                 className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-base"
               >
