@@ -212,18 +212,26 @@ const ServicesUtils = () => {
         <div className="mb-6 md:mb-8">
           <div className="flex items-center justify-between mb-4">
             <Link to="/">
-              <Button variant="outline" className="flex items-center gap-2 text-sm md:text-base">
+              <Button className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base flex items-center gap-2">
                 <Home className="h-4 w-4" />
-                <span className="hidden sm:inline">Home</span>
+                <span className="hidden sm:inline">API Hub Dashboard</span>
               </Button>
             </Link>
-            <Button 
-              onClick={() => setShowFAQ(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base flex items-center gap-2"
-            >
-              <HelpCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">FAQ</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => window.open('https://pay.accshub.org/', '_blank')}
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base"
+              >
+                Buy Tokens
+              </Button>
+              <Button 
+                onClick={() => setShowFAQ(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base flex items-center gap-2"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">FAQ</span>
+              </Button>
+            </div>
           </div>
           <div className="text-center md:text-left">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 md:mb-3">

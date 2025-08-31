@@ -12,6 +12,7 @@ import FAQ from '@/components/FAQ';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Bell, HelpCircle } from 'lucide-react';
 
 interface Product {
@@ -70,6 +71,7 @@ const Index = () => {
   const [tokenProductId, setTokenProductId] = useState<string>('');
   const [isMasterToken, setIsMasterToken] = useState<boolean>(false);
   const [showOnlyAvailableProducts, setShowOnlyAvailableProducts] = useState(true);
+  const [productFilter, setProductFilter] = useState('');
   
   // Refs for scrolling functionality
   const requestFormRef = useRef<HTMLDivElement>(null);
@@ -87,11 +89,23 @@ const Index = () => {
     return product.subcategory === selectedSubcategory;
   });
 
-  // Filter full products based on availability
+  // Filter full products based on availability and search filter
   const filteredFullProducts = fullProducts.filter(product => {
+    // First apply availability filter
     if (showOnlyAvailableProducts) {
-      return product.quantity !== null && product.quantity > 0;
+      if (product.quantity === null || product.quantity <= 0) {
+        return false;
+      }
     }
+    
+    // Then apply search filter
+    if (productFilter.trim()) {
+      const searchTerm = productFilter.toLowerCase().trim();
+      const matchesId = product.id.toLowerCase().includes(searchTerm);
+      const matchesName = product.name.toLowerCase().includes(searchTerm);
+      return matchesId || matchesName;
+    }
+    
     return true;
   });
 
@@ -730,19 +744,31 @@ const Index = () => {
         {/* Products Table */}
         <div className="mt-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle>Products Inventory</CardTitle>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="availableOnly"
-                  checked={showOnlyAvailableProducts}
-                  onChange={(e) => setShowOnlyAvailableProducts(e.target.checked)}
-                  className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-ring focus:ring-2"
-                />
-                <label htmlFor="availableOnly" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Show only available products
-                </label>
+            <CardHeader className="flex flex-col space-y-4 pb-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+                <CardTitle>Products Inventory</CardTitle>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      placeholder="Filter by ID or name..."
+                      value={productFilter}
+                      onChange={(e) => setProductFilter(e.target.value)}
+                      className="w-48"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="availableOnly"
+                      checked={showOnlyAvailableProducts}
+                      onChange={(e) => setShowOnlyAvailableProducts(e.target.checked)}
+                      className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-ring focus:ring-2"
+                    />
+                    <label htmlFor="availableOnly" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Show only available products
+                    </label>
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
