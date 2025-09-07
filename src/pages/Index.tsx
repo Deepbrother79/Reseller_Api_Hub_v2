@@ -801,29 +801,11 @@ const Index = () => {
             {/* Navigation buttons */}
             <div className="flex flex-wrap justify-center lg:justify-end gap-2 lg:gap-3">
               <Button 
-                onClick={() => setShowNotifications(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 lg:px-4 lg:py-3 text-sm lg:text-base"
-              >
-                📰 News
-              </Button>
-              <Button 
                 onClick={() => setShowFAQ(true)}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 lg:px-4 lg:py-3 text-sm lg:text-base flex items-center gap-2"
               >
                 <HelpCircle className="h-4 w-4" />
                 <span className="hidden sm:inline">FAQ</span>
-              </Button>
-              <Button 
-                onClick={() => window.open('https://market.accshub.org/', '_blank')}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-base"
-              >
-                Reseller HUB
-              </Button>
-              <Button 
-                onClick={() => window.open('https://pay.accshub.org/', '_blank')}
-                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 lg:px-6 lg:py-3 text-sm lg:text-base"
-              >
-                Buy Tokens
               </Button>
               <Button 
                 onClick={() => window.location.href = '/services-utils'}
