@@ -7,14 +7,14 @@ import ApiEndpointsPanel from '@/components/ApiEndpointsPanel';
 import TransactionList from '@/components/TransactionList';
 import RefundForm from '@/components/RefundForm';
 import CategoryFilter from '@/components/CategoryFilter';
-import { NotificationPopup } from '@/components/NotificationPopup';
+
 import FAQ from '@/components/FAQ';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -249,8 +249,7 @@ const Index = () => {
   // State for tracking which products have updated quantities
   const [updatedProductIds, setUpdatedProductIds] = useState<Set<string>>(new Set());
   
-  // State for notification popup visibility
-  const [showNotifications, setShowNotifications] = useState(false);
+
   const [showFAQ, setShowFAQ] = useState(false);
 
   // Subscribe to realtime updates for products quantity
@@ -786,7 +785,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <NotificationPopup forceVisible={showNotifications} onClose={() => setShowNotifications(false)} />
+
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           {/* Header with title and buttons */}
