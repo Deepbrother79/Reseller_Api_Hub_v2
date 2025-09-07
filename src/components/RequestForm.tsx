@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Search, X, ChevronDown } from "lucide-react";
+import { Copy, Search, X, ChevronDown, ShoppingCart, Info } from "lucide-react";
 import ProductTooltip from './ProductTooltip';
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -151,7 +151,10 @@ const RequestForm: React.FC<RequestFormProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Make Request</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <ShoppingCart className="w-5 h-5" />
+          Buy Here
+        </CardTitle>
         <CardDescription>
           Select a product, enter your token and desired quantity
         </CardDescription>
@@ -246,7 +249,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
                               </span>
                               {product.value && (
                                 <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
-                                  {product.value.toFixed(4)} credits
+                                  ${product.value.toFixed(4)} credits master
                                 </span>
                               )}
                             </div>
@@ -327,7 +330,16 @@ const RequestForm: React.FC<RequestFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="token">Token/Voucher</Label>
+            <Label htmlFor="token" className="flex items-center gap-2">
+              Token
+              <div className="relative group">
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                  Enter Product Token or Master Token
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                </div>
+              </div>
+            </Label>
             <Input
               id="token"
               type="text"
@@ -337,7 +349,16 @@ const RequestForm: React.FC<RequestFormProps> = ({
             />
             <div className="flex items-center gap-2 pt-1">
               <Checkbox id="use-master" checked={useMasterToken} onCheckedChange={(v) => setUseMasterToken(Boolean(v))} />
-              <Label htmlFor="use-master" className="text-sm">Use Master Token</Label>
+              <Label htmlFor="use-master" className="text-sm flex items-center gap-2">
+                Use Master Token
+                <div className="relative group">
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 w-80 text-left">
+                     A Master Token is a universal token that can be used for any product available on shop. Each credit master equals 1 USD and can be split into 4 decimals for micro-payments. Example: 1.0000 – 0.0015 = 0.9985.
+                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                   </div>
+                </div>
+              </Label>
             </div>
           </div>
 
