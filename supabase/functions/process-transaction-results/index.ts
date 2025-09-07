@@ -87,6 +87,41 @@ serve(async (req) => {
       console.log(`Start check time (${startCheckMinutes} minutes ago): ${startCheckTime.toISOString()}`);
       console.log(`Last check time: ${lastCheckTime.toISOString()}`);
 
+      // First, check if there are any transactions newer than last_check_time for these products
+      const { data: newerTransactions, error: newerTransactionsError } = await supabaseClient
+        .from('transactions')
+        .select('timestamp')
+        .in('product_id', targetProductIds)
+        .gt('timestamp', lastCheckTime.toISOString())
+        .order('timestamp', { ascending: false })
+        .limit(1);
+
+      if (newerTransactionsError) {
+        console.error(`Error checking for newer transactions for config ${config.id}:`, newerTransactionsError);
+        totalErrors++;
+        continue;
+      }
+
+      // If no newer transactions exist, update last_check_time to current time and skip processing
+      if (!newerTransactions || newerTransactions.length === 0) {
+        console.log(`No newer transactions found for config ${config.id}, updating last_check_time to current time`);
+        
+        const currentTimestamp = new Date().toISOString();
+        const { error: updateError } = await supabaseClient
+          .from('processed_used_goods')
+          .update({
+            last_check_time: currentTimestamp
+          })
+          .eq('id', config.id);
+
+        if (updateError) {
+          console.error(`Error updating last_check_time for config ${config.id}:`, updateError);
+        } else {
+          console.log(`Updated last_check_time for config ${config.id} to: ${currentTimestamp}`);
+        }
+        continue;
+      }
+
       // Fetch transactions that are:
       // 1. Created AFTER last_check_time (to avoid reprocessing)
       // 2. Created BEFORE start_check_time (to ensure they are old enough)

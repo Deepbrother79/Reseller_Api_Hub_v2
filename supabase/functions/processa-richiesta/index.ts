@@ -90,6 +90,28 @@ serve(async (req) => {
         .maybeSingle();
 
       if (regularToken) {
+        // Check if token is activated
+        if (!regularToken.activated) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: "Token Not Activated: Your token is currently deactivated and cannot be used for transactions. Please contact support to activate your token." 
+            }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Check if token is locked
+        if (regularToken.locked) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: "Token Locked: Your token has been locked and cannot be used for transactions. Please contact support to unlock your token." 
+            }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         tokenData = regularToken;
         console.log('Using regular token');
       } else {

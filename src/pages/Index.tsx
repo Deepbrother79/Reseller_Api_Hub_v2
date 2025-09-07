@@ -13,7 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Bell, HelpCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bell, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -70,8 +71,15 @@ const Index = () => {
   const [tokenProductName, setTokenProductName] = useState<string>('');
   const [tokenProductId, setTokenProductId] = useState<string>('');
   const [isMasterToken, setIsMasterToken] = useState<boolean>(false);
+  const [activated, setActivated] = useState<boolean | undefined>(undefined);
+  const [locked, setLocked] = useState<boolean | undefined>(undefined);
+  const [activationStatus, setActivationStatus] = useState<string>('');
   const [showOnlyAvailableProducts, setShowOnlyAvailableProducts] = useState(true);
   const [productFilter, setProductFilter] = useState('');
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   // Refs for scrolling functionality
   const requestFormRef = useRef<HTMLDivElement>(null);
@@ -108,6 +116,18 @@ const Index = () => {
     
     return true;
   });
+
+  // Pagination logic
+  const totalProducts = filteredFullProducts.length;
+  const totalPages = Math.ceil(totalProducts / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedProducts = filteredFullProducts.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [productFilter, showOnlyAvailableProducts, pageSize]);
 
   // Handle category change
   const handleCategoryChange = (category: string) => {
@@ -410,6 +430,11 @@ const Index = () => {
         setIsMasterToken(isMaster);
         console.log('Set isMasterToken to:', isMaster);
         
+        // Set activated and locked states
+        setActivated(data.activated);
+        setLocked(data.locked);
+        console.log('Set token states - activated:', data.activated, 'locked:', data.locked);
+        
         // Set product ID for non-master tokens directly from credits API
         if (!isMaster && data.product_id && typeof data.product_id === 'string') {
           setTokenProductId(data.product_id);
@@ -466,6 +491,8 @@ const Index = () => {
         setTokenProductName('');
         setTokenProductId('');
         setIsMasterToken(false);
+        setActivated(undefined);
+        setLocked(undefined);
       }
     } catch (error) {
       console.error('Error fetching credits:', error);
@@ -473,6 +500,8 @@ const Index = () => {
       setTokenProductName('');
       setTokenProductId('');
       setIsMasterToken(false);
+      setActivated(undefined);
+      setLocked(undefined);
     }
   };
 
@@ -491,26 +520,149 @@ const Index = () => {
     setTransactions([]);
 
     try {
-      // Fetch credits first
-      await fetchCreditsForToken(historyToken);
-
       const response = await fetch(`${baseUrl}/api-history?token=${encodeURIComponent(historyToken)}`);
       const data = await response.json();
 
-      if (data.success && data.transactions) {
-        setTransactions(data.transactions);
-        toast({
-          title: "Success",
-          description: `Found ${data.transactions.length} transactions`,
-        });
+      if (data.success) {
+        // Set credits and token info from the unified response
+        if (typeof data.credits === 'number') {
+          setCredits(data.credits);
+        } else {
+          setCredits(null);
+        }
+
+        // Set product name and other token information
+        if (data.product_name && typeof data.product_name === 'string') {
+          setTokenProductName(data.product_name);
+        } else {
+          setTokenProductName('');
+        }
+
+        // Set master token flag
+        const isMaster = Boolean(data.is_master_token);
+        setIsMasterToken(isMaster);
+        console.log('Set isMasterToken to:', isMaster);
+        
+        // Set activated and locked states
+        setActivated(data.activated);
+        setLocked(data.locked);
+        setActivationStatus(''); // Reset activation status for successful cases
+        console.log('Set token states from history - activated:', data.activated, 'locked:', data.locked);
+
+        // Set product ID for non-master tokens
+        if (!isMaster && data.product_id && typeof data.product_id === 'string') {
+          setTokenProductId(data.product_id);
+          console.log('Set tokenProductId from history API to:', data.product_id);
+        } else if (!isMaster && data.product_name) {
+          // If no product_id but we have product_name, lookup from products array
+          console.log('No product_id in history response, looking up by product_name:', data.product_name);
+          
+          // First try in products array
+          let foundProduct = products.find(p => p.name === data.product_name);
+          if (!foundProduct) {
+            // Try in fullProducts array as fallback
+            foundProduct = fullProducts.find(p => p.name === data.product_name);
+          }
+          
+          if (foundProduct) {
+            setTokenProductId(foundProduct.id);
+            console.log('Found product_id by name lookup in frontend:', foundProduct.id);
+          } else {
+            // If not found in loaded arrays, try to fetch from API
+            console.log('Product not found in loaded arrays, fetching from API...');
+            try {
+              const productsResponse = await fetch(`${baseUrl}/api-products-internal-gt45dsqt1plqkwsxcz`);
+              const productsData = await productsResponse.json();
+              
+              if (productsData.success && productsData.products) {
+                const apiProduct = productsData.products.find((p: any) => p.name === data.product_name);
+                if (apiProduct) {
+                  setTokenProductId(apiProduct.id);
+                  console.log('Found product_id by API lookup:', apiProduct.id);
+                } else {
+                  setTokenProductId('');
+                  console.log('Product not found even in API lookup:', data.product_name);
+                }
+              } else {
+                setTokenProductId('');
+                console.log('Failed to fetch products from API for lookup');
+              }
+            } catch (error) {
+              console.error('Error fetching products for lookup:', error);
+              setTokenProductId('');
+            }
+          }
+        } else {
+          setTokenProductId('');
+          if (!isMaster) {
+            console.log('No product_id and no product_name in history response:', data);
+          }
+        }
+
+        // Set transactions
+        if (data.transactions && Array.isArray(data.transactions)) {
+          setTransactions(data.transactions);
+          toast({
+            title: "Success",
+            description: `Found ${data.transactions.length} transactions`,
+          });
+        } else {
+          setTransactions([]);
+          toast({
+            title: "Info",
+            description: data.message || "No transactions found",
+          });
+        }
       } else {
-        toast({
-          title: "Info",
-          description: data.message || "No transactions found",
-        });
+        // Check if this is a pending or rejected activation case (has token data despite error)
+        if ((data.activation_status === 'Pending' || data.activation_status === 'Rejected') && data.credits !== undefined) {
+          // Handle pending/rejected activation - show token data but display appropriate message
+          setCredits(data.credits);
+          setTokenProductName(data.product_name || '');
+          setTokenProductId(data.product_id || '');
+          setIsMasterToken(Boolean(data.is_master_token));
+          setActivated(data.activated);
+          setLocked(data.locked);
+          setActivationStatus(data.activation_status);
+          setTransactions([]); // No transactions for pending/rejected tokens
+          
+          const isRejected = data.activation_status === 'Rejected';
+          toast({
+            title: isRejected ? "Activation Rejected" : "Activation Pending",
+            description: data.error || (isRejected ? "Activation Rejected - Contact the dealer" : "Activation Pending - Contact the dealer"),
+            variant: "destructive",
+          });
+        } else {
+          // When API fails or returns other errors, reset values
+          console.log('History API returned error or invalid data:', data);
+          setCredits(null);
+          setTokenProductName('');
+          setTokenProductId('');
+          setIsMasterToken(false);
+          setActivated(undefined);
+          setLocked(undefined);
+          setActivationStatus('');
+          setTransactions([]);
+          
+          toast({
+            title: "Info",
+            description: data.message || data.error || "No data found",
+          });
+        }
       }
     } catch (error) {
       console.error('Error:', error);
+      
+      // Reset all values on error
+      setCredits(null);
+      setTokenProductName('');
+      setTokenProductId('');
+      setIsMasterToken(false);
+      setActivated(undefined);
+      setLocked(undefined);
+      setActivationStatus('');
+      setTransactions([]);
+      
       toast({
         title: "Error",
         description: "Failed to fetch transaction history",
@@ -527,6 +679,9 @@ const Index = () => {
     setTokenProductName(''); // Reset product name when token changes
     setTokenProductId(''); // Reset product ID when token changes
     setIsMasterToken(false); // Reset master token flag when token changes
+    setActivated(undefined); // Reset activated state when token changes
+    setLocked(undefined); // Reset locked state when token changes
+    setActivationStatus(''); // Reset activation status when token changes
   };
 
   // Handle credit box click to auto-fill request form
@@ -720,6 +875,9 @@ const Index = () => {
             tokenProductName={tokenProductName}
             tokenProductId={tokenProductId}
             isMasterToken={isMasterToken}
+            activated={activated}
+            locked={locked}
+            activationStatus={activationStatus}
             onHistoryTokenChange={handleHistoryTokenChange}
             onHistorySubmit={handleHistorySubmit}
             onCopyUrl={copyToClipboard}
@@ -763,6 +921,20 @@ const Index = () => {
                     />
                   </div>
                   <div className="flex items-center space-x-2">
+                    <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-gray-600 whitespace-nowrap">per page</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       id="availableOnly"
@@ -788,7 +960,7 @@ const Index = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredFullProducts.map((product) => (
+                  {paginatedProducts.map((product) => (
                     <TableRow key={product.id} className="hover:bg-gray-50 transition-colors">
                       <TableCell 
                         className="font-mono text-sm cursor-pointer hover:text-blue-600 hover:underline transition-colors" 
@@ -837,6 +1009,66 @@ const Index = () => {
               {filteredFullProducts.length === 0 && (
                 <div className="text-center py-4 text-gray-500">
                   {showOnlyAvailableProducts ? 'No available products found' : 'No products found'}
+                </div>
+              )}
+              
+              {/* Pagination Controls */}
+              {totalProducts > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Showing {startIndex + 1}-{Math.min(endIndex, totalProducts)} of {totalProducts} products
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

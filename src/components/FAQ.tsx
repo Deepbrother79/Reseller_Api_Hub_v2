@@ -224,7 +224,7 @@ const faqData: FAQItem[] = [
     id: "api-integration",
     category: "🔄 API Integration",
     question: "Can I use these services programmatically?",
-    answer: "Yes, all services expose REST API endpoints:\n• **Process**: POST to https://api.accshub.org/process\n• **History**: GET https://api.accshub.org/history?token=YOUR_TOKEN\n• **Credits**: GET https://api.accshub.org/credits?token=YOUR_TOKEN\n• **Products**: GET https://api.accshub.org/items\n• **Refund**: POST to https://api.accshub.org/refund\n• **OAuth2**: POST to https://api.accshub.org/refreshtoken",
+    answer: "Yes, all services expose REST API endpoints:\n• **Process**: POST to https://api.accshub.org/process\n• **History**: GET https://api.accshub.org/unified?token=YOUR_TOKEN&action=history\n• **Credits**: GET https://api.accshub.org/unified?token=YOUR_TOKEN&action=credits\n• **Products**: GET https://api.accshub.org/items\n• **Refund**: POST to https://api.accshub.org/refund\n• **OAuth2**: POST to https://api.accshub.org/refreshtoken",
     tags: ["api", "endpoints", "integration", "programmatic", "rest"]
   },
   {

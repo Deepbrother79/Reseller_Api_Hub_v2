@@ -305,6 +305,36 @@ serve(async (req)=>{
       // Try regular token table
       const { data: regularToken, error: regularTokenError } = await supabase.from('tokens').select('*').eq('token', token).eq('product_id', product.id).single();
       if (regularToken) {
+        // Check if token is activated
+        if (!regularToken.activated) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: 'Token Not Activated: Your token is currently deactivated and cannot be used for GET-OAUTH2-TOKEN operations. Please contact support to activate your token.',
+            error_type: 'token_not_activated'
+          }), {
+            status: 403,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+        
+        // Check if token is locked
+        if (regularToken.locked) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: 'Token Locked: Your token has been locked and cannot be used for GET-OAUTH2-TOKEN operations. Please contact support to unlock your token.',
+            error_type: 'token_locked'
+          }), {
+            status: 403,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+        
         tokenData = regularToken;
       } else {
         return new Response(JSON.stringify({
